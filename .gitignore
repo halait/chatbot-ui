@@ -1,0 +1,9 @@
+node_modules
+.firebase
+firebase-debug.log
+
+conversation.json
+init_prompts.json
+key.txt
+scratch.ts
+scratch.js

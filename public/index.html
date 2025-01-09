@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang=en>
+
+<head>
+    <meta name=viewport content="width=device-width,initial-scale=1">
+    <style>
+        body {
+            --color: #ddd;
+            --background-color: #000;
+            --secondary-background-color: #333;
+            --developer-message-background: #400;
+            --assistant-message-background: #004;
+            --user-message-background: var(--secondary-background-color);
+            color: var(--color);
+            background-color: var(--background-color);
+            margin: 0;
+            font-family: sans-serif;
+            line-height: 1.8;
+            /* --chat-box-height: 8rem; */
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #chat {
+            overflow-y: scroll;
+            padding: 0 1rem;
+            flex-grow: 1;
+            width: 100%;
+            max-width: 80rem;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        #chat::-webkit-scrollbar-track,
+        #chat::-webkit-scrollbar {
+            background-color: var(--background-color);
+        }
+
+        #chat::-webkit-scrollbar-thumb {
+            background-color: var(--secondary-background-color);
+        }
+
+        #chat-input {
+            width: 100%;
+            height: var(--chat-box-height);
+            line-height: 1.6;
+            font-family: inherit;
+            background-color: inherit;
+            color: inherit;
+            border: 2px solid var(--secondary-background-color);
+            resize: none;
+            box-sizing: border-box;
+            padding: 0.5rem;
+        }
+
+        #chat-input:focus {
+            border: 2px solid var(--color);
+            outline: none;
+        }
+
+        #form {
+            display: flex;
+        }
+
+        #chat p {
+            padding: 0.5rem;
+        }
+
+        #chat p.developer {
+            background-color: var(--developer-message-background);
+        }
+
+        #chat p.assistant {
+            background-color: var(--assistant-message-background);
+        }
+
+        #chat p.user {
+            background-color: var(--user-message-background);
+        }
+
+        #role-select, #submit, #input-set-button {
+            margin: 0;
+        }
+
+        input,
+        select,
+        select option,
+        button {
+            color: var(--color);
+            background-color: var(--background-color);
+            outline: none;
+            border: 2px solid var(--secondary-background-color);
+            display: block;
+            margin: 0.5rem 0;
+            padding: 0.4rem;
+        }
+
+        input:focus,
+        select:focus,
+        select option:focus,
+        button:focus {
+            outline: none;
+            border: 2px solid var(--color);
+        }
+
+        #app-header {
+            display: flex;
+        }
+
+        #app-heading {
+            text-align: center;
+            flex-grow: 1;
+            font-size: 1.5rem;
+        }
+
+        .modal {
+            display: none;
+            position: absolute;
+            width: 80vw;
+            max-width: 80rem;
+            height: 80vh;
+            max-height: 80rem;
+            top: 6rem;
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            border: 2px solid var(--secondary-background-color);
+            padding: 0rem 1rem 1rem;
+            background-color: inherit;
+        }
+
+        .history-item-container {
+            display: flex;
+            margin: 0.5rem 0;
+        }
+
+        .history-item {
+            flex-grow: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <header id="app-header">
+        <button id="history-button">History</button>
+        <h1 id="app-heading">Chat UI</h1>
+        <button id="new-chat-button">New Chat</button>
+        <button id="set-config-button">Config</button>
+    </header>
+    <div id="chat"></div>
+    <form id="form">
+        <select id="role-select">
+            <option value="developer">Developer</option>
+            <option value="user">User</option>
+            <option value="assistant">Assistant</option>
+        </select>
+        <textarea id="chat-input" rows="2" placeholder="Enter user prompt" autocomplete="off"></textarea>
+        <button id="input-set-button" type="button">Set</button>
+        <input id="submit" type="submit" value="Send">
+    </form>
+    <div id="history-modal" class="modal">
+        <h2>History</h2>
+        <div id="history-container"></div>
+    </div>
+    <div id="config-modal" class="modal">
+        <h2>Configuration</h2>
+        <div id="history-container"></div>
+        <form id="config-form">
+            <label for="set-key-input">Key</label>
+            <input id="set-key-input" type="password">
+            <input type="submit" value="Submit">
+        </form>
+    </div>
+    <script src="main.js" type="module"></script>
+</body>
+
+</html>
