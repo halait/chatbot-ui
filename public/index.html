@@ -32,12 +32,12 @@
             box-sizing: border-box;
         }
 
-        #chat::-webkit-scrollbar-track,
-        #chat::-webkit-scrollbar {
+        *::-webkit-scrollbar-track,
+        *::-webkit-scrollbar {
             background-color: var(--background-color);
         }
 
-        #chat::-webkit-scrollbar-thumb {
+        *::-webkit-scrollbar-thumb {
             background-color: var(--secondary-background-color);
         }
 
@@ -63,23 +63,23 @@
             display: flex;
         }
 
-        #chat p {
+        #chat > div {
             padding: 0.5rem;
         }
 
-        #chat p.developer {
+        #chat > .developer {
             background-color: var(--developer-message-background);
         }
 
-        #chat p.assistant {
+        #chat > .assistant {
             background-color: var(--assistant-message-background);
         }
 
-        #chat p.user {
+        #chat > .user {
             background-color: var(--user-message-background);
         }
 
-        #role-select, #submit, #input-set-button {
+        #role-select {
             margin: 0;
         }
 
@@ -102,6 +102,10 @@
         button:focus {
             outline: none;
             border: 2px solid var(--color);
+        }
+
+        button, input[type="submit"] {
+            margin: 0;
         }
 
         #app-header {
@@ -128,6 +132,12 @@
             border: 2px solid var(--secondary-background-color);
             padding: 0rem 1rem 1rem;
             background-color: inherit;
+            flex-direction: column;
+        }
+
+        #history-container {
+            overflow-y: scroll;
+            padding: 1rem;
         }
 
         .history-item-container {
@@ -165,8 +175,9 @@
     </div>
     <div id="config-modal" class="modal">
         <h2>Configuration</h2>
-        <div id="history-container"></div>
         <form id="config-form">
+            <label for="set-endpoint-input">Endpoint</label>
+            <input id="set-endpoint-input" type="url">
             <label for="set-key-input">Key</label>
             <input id="set-key-input" type="password">
             <input type="submit" value="Submit">

@@ -1,8 +1,9 @@
 import { DB, ConversationMessage } from './db.js'
+import { render, htmlToMarkdown } from './markdown_renderer.js'
 
-// const endpoint = 'https://api.openai.com/v1/chat/completions'
+let endpoint = 'https://api.openai.com/v1/chat/completions'
 let apiKey = localStorage.getItem('apiKey') ?? ''
-const endpoint = 'http://127.0.0.1:5000/chat'
+// let endpoint = 'http://127.0.0.1:5000/chat'
 
 const chatDiv = document.getElementById('chat') as HTMLElement
 const input = document.getElementById('chat-input') as HTMLInputElement
@@ -28,7 +29,6 @@ async function submitForm() {
         const messageId = await currentConversation.addMessage(db, message)
 
         addMessageToUi(messageId, message)
-        chatDiv.scrollTop = chatDiv.scrollHeight
     }
 
     const messages = currentConversation.map(function (conversationMessage) { return conversationMessage.message })
@@ -55,19 +55,28 @@ async function submitForm() {
     const assistantMessageId = await currentConversation.addMessage(db, assistantMessage)
 
     addMessageToUi(assistantMessageId, assistantMessage)
-    chatDiv.scrollTop = chatDiv.scrollHeight
 }
 
 function addMessageToUi(messageId: number, message: Message) {
-    const p = document.createElement('p')
-    p.setAttribute('contenteditable', 'plaintext-only')
-    p.className = message.role
-    p.innerHTML = message.content.replace(/\n/g, '<br>')
-    p.dataset.id = messageId.toString()
-    p.addEventListener('focusout', function (e) {
+    const div = document.createElement('div')
+    div.setAttribute('contenteditable', 'plaintext-only')
+    div.className = message.role
+    const nodes = render(message.content)
+    for(const child of nodes) {
+        div.appendChild(child)
+    }
+    // div.innerHTML = message.content.replace(/\n/g, '<br>')
+    div.dataset.id = messageId.toString()
+    div.addEventListener('focusin', function (e) {
         const element = e.currentTarget as HTMLElement
+        element.setAttribute('spellcheck', 'true')
+    })
+    div.addEventListener('focusout', function (e) {
+        const element = e.currentTarget as HTMLElement
+        element.setAttribute('spellcheck', 'false')
         const messageKey = parseInt(element.dataset.id!)
-        const content = element.textContent?.trim()
+        const content = htmlToMarkdown(element.childNodes)
+        console.log(content)
         if (!content) {
             currentConversation.deleteMessage(db, messageKey)
             element.parentElement?.removeChild(element)
@@ -78,7 +87,8 @@ function addMessageToUi(messageId: number, message: Message) {
             role: element.className
         }, parseInt(element.dataset.id!))
     })
-    chatDiv.appendChild(p)
+    chatDiv.appendChild(div)
+    chatDiv.scrollTop = chatDiv.scrollHeight
 }
 
 async function setConversation(conversationKey: number, conversation: Conversation) {
@@ -132,7 +142,7 @@ async function main() {
     })
 
     document.getElementById('history-button')!.addEventListener('click', async function () {
-        const showModal = historyModal.style.display !== 'block'
+        const showModal = historyModal.style.display !== 'flex'
         if (!showModal) {
             historyModal.style.display = 'none';
             return
@@ -164,7 +174,7 @@ async function main() {
             container.appendChild(button)
             historyContainer.appendChild(container)
         }
-        historyModal.style.display = 'block';
+        historyModal.style.display = 'flex';
     })
 
     document.getElementById('new-chat-button')?.addEventListener('click', function () {
@@ -197,7 +207,10 @@ async function main() {
         }
         const keyInput = document.getElementById('set-key-input') as HTMLInputElement
         keyInput.value = apiKey
-        configModal.style.display = 'block';
+        const endpointInput = document.getElementById('set-endpoint-input') as HTMLInputElement
+        endpointInput.value = endpoint
+
+        configModal.style.display = 'block'
     })
 
     document.getElementById('config-form')?.addEventListener('submit', function (e) {
@@ -205,6 +218,8 @@ async function main() {
         const keyInput = document.getElementById('set-key-input') as HTMLInputElement
         apiKey = keyInput.value
         localStorage.setItem('apiKey', apiKey)
+        const endpointInput = document.getElementById('set-endpoint-input') as HTMLInputElement
+        endpoint = endpointInput.value
     })
 }
 
