@@ -59,10 +59,10 @@ async function submitForm() {
 
 function addMessageToUi(messageId: number, message: Message) {
     const div = document.createElement('div')
-    div.setAttribute('contenteditable', 'plaintext-only')
+    div.setAttribute('contenteditable', 'true')
     div.className = message.role
     const nodes = render(message.content)
-    for(const child of nodes) {
+    for (const child of nodes) {
         div.appendChild(child)
     }
     // div.innerHTML = message.content.replace(/\n/g, '<br>')
@@ -70,18 +70,25 @@ function addMessageToUi(messageId: number, message: Message) {
     div.addEventListener('focusin', function (e) {
         const element = e.currentTarget as HTMLElement
         element.setAttribute('spellcheck', 'true')
+        element.style.whiteSpace = 'pre-wrap'
+        element.replaceChildren(document.createTextNode(htmlToMarkdown(element.childNodes)))
     })
     div.addEventListener('focusout', function (e) {
         const element = e.currentTarget as HTMLElement
         element.setAttribute('spellcheck', 'false')
         const messageKey = parseInt(element.dataset.id!)
-        const content = htmlToMarkdown(element.childNodes)
-        console.log(content)
+        // const content = htmlToMarkdown(element.childNodes).trim()
+        const content = element.textContent?.trim()
+        // for (const child of nodes) {
+        //     element.appendChild(child)
+        // }
         if (!content) {
             currentConversation.deleteMessage(db, messageKey)
             element.parentElement?.removeChild(element)
             return
         }
+        const nodes = render(content)
+        element.replaceChildren(...nodes)
         currentConversation.updateMessage(db, {
             content: content,
             role: element.className
@@ -184,9 +191,9 @@ async function main() {
 
     document.getElementById('input-set-button')?.addEventListener('click', async function () {
         const content = input.value.trim()
-        if(content) {
+        if (content) {
             input.value = ''
-            const message = { role: roleSelect.value, content}
+            const message = { role: roleSelect.value, content }
             const id = await currentConversation.addMessage(db, message)
             addMessageToUi(id, message)
         }
