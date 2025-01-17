@@ -1,9 +1,9 @@
 import { DB, ConversationMessage } from './db.js'
 import { render, htmlToMarkdown } from './markdown_renderer.js'
 
-let endpoint = 'https://api.openai.com/v1/chat/completions'
+let endpoint = localStorage.getItem('endpoint') ?? 'https://api.openai.com/v1/chat/completions'
 let apiKey = localStorage.getItem('apiKey') ?? ''
-// let endpoint = 'http://127.0.0.1:5000/chat'
+let model = localStorage.getItem('model') ?? 'gpt-4o-mini'
 
 const chatDiv = document.getElementById('chat') as HTMLElement
 const input = document.getElementById('chat-input') as HTMLInputElement
@@ -43,7 +43,7 @@ async function submitForm() {
             'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model,
             store: false,
             messages: messages
         })
@@ -216,6 +216,8 @@ async function main() {
         keyInput.value = apiKey
         const endpointInput = document.getElementById('set-endpoint-input') as HTMLInputElement
         endpointInput.value = endpoint
+        const modelInput = document.getElementById('set-model-input') as HTMLInputElement
+        modelInput.value = model
 
         configModal.style.display = 'block'
     })
@@ -227,6 +229,10 @@ async function main() {
         localStorage.setItem('apiKey', apiKey)
         const endpointInput = document.getElementById('set-endpoint-input') as HTMLInputElement
         endpoint = endpointInput.value
+        localStorage.setItem('endpoint', endpoint)
+        const modelInput = document.getElementById('set-model-input') as HTMLInputElement
+        model = modelInput.value
+        localStorage.setItem('model', model)
     })
 }
 

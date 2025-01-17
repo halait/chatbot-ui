@@ -1,8 +1,8 @@
 import { DB } from './db.js';
 import { render, htmlToMarkdown } from './markdown_renderer.js';
-let endpoint = 'https://api.openai.com/v1/chat/completions';
+let endpoint = localStorage.getItem('endpoint') ?? 'https://api.openai.com/v1/chat/completions';
 let apiKey = localStorage.getItem('apiKey') ?? '';
-// let endpoint = 'http://127.0.0.1:5000/chat'
+let model = localStorage.getItem('model') ?? 'gpt-4o-mini';
 const chatDiv = document.getElementById('chat');
 const input = document.getElementById('chat-input');
 const roleSelect = document.getElementById('role-select');
@@ -32,7 +32,7 @@ async function submitForm() {
             'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model,
             store: false,
             messages: messages
         })
@@ -189,6 +189,8 @@ async function main() {
         keyInput.value = apiKey;
         const endpointInput = document.getElementById('set-endpoint-input');
         endpointInput.value = endpoint;
+        const modelInput = document.getElementById('set-model-input');
+        modelInput.value = model;
         configModal.style.display = 'block';
     });
     document.getElementById('config-form')?.addEventListener('submit', function (e) {
@@ -198,6 +200,10 @@ async function main() {
         localStorage.setItem('apiKey', apiKey);
         const endpointInput = document.getElementById('set-endpoint-input');
         endpoint = endpointInput.value;
+        localStorage.setItem('endpoint', endpoint);
+        const modelInput = document.getElementById('set-model-input');
+        model = modelInput.value;
+        localStorage.setItem('model', model);
     });
 }
 main();
