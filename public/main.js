@@ -204,6 +204,33 @@ async function main() {
         const modelInput = document.getElementById('set-model-input');
         model = modelInput.value;
         localStorage.setItem('model', model);
+        configModal.style.display = 'none';
+    });
+    document.getElementById('export-button')?.addEventListener('click', function () {
+        const json = JSON.stringify(currentConversation.map(function (conversationMessage) { return conversationMessage.message; }));
+        const element = document.createElement('a');
+        element.style.display = 'none';
+        element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(json));
+        element.setAttribute('download', 'chat-ui-export.json');
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+    });
+    document.getElementById('import-button')?.addEventListener('click', function () {
+        document.getElementById('import-input')?.click();
+    });
+    document.getElementById('import-input')?.addEventListener('change', async function () {
+        const file = this.files[0];
+        if (!file) {
+            return;
+        }
+        const messages = JSON.parse(await file.text());
+        console.log(messages);
+        currentConversation.clear();
+        chatDiv.replaceChildren();
+        for (const message of messages) {
+            addMessageToUi(await currentConversation.addMessage(db, message), message);
+        }
     });
 }
 main();

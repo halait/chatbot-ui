@@ -63,19 +63,19 @@
             display: flex;
         }
 
-        #chat > div {
+        #chat>div {
             padding: 0.5rem;
         }
 
-        #chat > .developer {
+        #chat>.developer {
             background-color: var(--developer-message-background);
         }
 
-        #chat > .assistant {
+        #chat>.assistant {
             background-color: var(--assistant-message-background);
         }
 
-        #chat > .user {
+        #chat>.user {
             background-color: var(--user-message-background);
         }
 
@@ -94,6 +94,7 @@
             display: block;
             margin: 0.5rem 0;
             padding: 0.4rem;
+            font-size: 1rem;            
         }
 
         input:focus,
@@ -104,7 +105,8 @@
             border: 2px solid var(--color);
         }
 
-        button, input[type="submit"] {
+        button,
+        input[type="submit"] {
             margin: 0;
         }
 
@@ -116,6 +118,7 @@
             text-align: center;
             flex-grow: 1;
             font-size: 1.5rem;
+            margin: 0.5rem;
         }
 
         .modal {
@@ -148,15 +151,22 @@
         .history-item {
             flex-grow: 1;
         }
+
+        #import-input {
+            display: none;
+        }
     </style>
 </head>
 
 <body>
     <header id="app-header">
+        <button id="set-config-button">Config</button>
         <button id="history-button">History</button>
         <h1 id="app-heading">Chat UI</h1>
         <button id="new-chat-button">New Chat</button>
-        <button id="set-config-button">Config</button>
+        <button id="export-button">Export</button>
+        <button id="import-button">Import</button>
+        <input type="file" id="import-input" accept=".json"/>
     </header>
     <div id="chat"></div>
     <form id="form">
