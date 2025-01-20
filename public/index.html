@@ -8,15 +8,14 @@
             --color: #ddd;
             --background-color: #000;
             --secondary-background-color: #333;
-            --developer-message-background: #400;
-            --assistant-message-background: #004;
-            --user-message-background: var(--secondary-background-color);
+            --developer-message-background: #200;
+            --assistant-message-background: #002;
+            --user-message-background: #020;
             color: var(--color);
             background-color: var(--background-color);
             margin: 0;
             font-family: sans-serif;
             line-height: 1.8;
-            /* --chat-box-height: 8rem; */
             display: flex;
             flex-direction: column;
             height: 100vh;
@@ -42,16 +41,13 @@
         }
 
         #chat-input {
-            width: 100%;
-            height: var(--chat-box-height);
-            line-height: 1.6;
-            font-family: inherit;
-            background-color: inherit;
-            color: inherit;
+            flex-grow: 1;
+            max-height: 16rem;
             border: 2px solid var(--secondary-background-color);
-            resize: none;
             box-sizing: border-box;
             padding: 0.5rem;
+            overflow-wrap: break-word;
+            overflow-y: auto;
         }
 
         #chat-input:focus {
@@ -59,12 +55,18 @@
             outline: none;
         }
 
-        #form {
+        /* #form {
+            display: flex;
+            width: 100vw;
+        } */
+
+        #form-bar {
             display: flex;
         }
 
         #chat>div {
-            padding: 0.5rem;
+            padding: 0.4rem;
+            margin: 0.8rem;
         }
 
         #chat>.developer {
@@ -93,8 +95,8 @@
             border: 2px solid var(--secondary-background-color);
             display: block;
             margin: 0.5rem 0;
-            padding: 0.4rem;
-            font-size: 1rem;            
+            padding: 0.6rem;
+            font-size: 1rem;
         }
 
         input:focus,
@@ -115,10 +117,10 @@
         }
 
         #app-heading {
-            text-align: center;
+            display: none;
             flex-grow: 1;
             font-size: 1.5rem;
-            margin: 0.5rem;
+            margin: 0.5rem 1rem;
         }
 
         .modal {
@@ -155,18 +157,24 @@
         #import-input {
             display: none;
         }
+
+        @media (min-width: 32rem) {
+            #app-heading {
+                display: block;
+            }
+        }
     </style>
 </head>
 
 <body>
     <header id="app-header">
+        <h1 id="app-heading">Chat UI</h1>
         <button id="set-config-button">Config</button>
         <button id="history-button">History</button>
-        <h1 id="app-heading">Chat UI</h1>
         <button id="new-chat-button">New Chat</button>
         <button id="export-button">Export</button>
         <button id="import-button">Import</button>
-        <input type="file" id="import-input" accept=".json"/>
+        <input type="file" id="import-input" accept=".json" />
     </header>
     <div id="chat"></div>
     <form id="form">
@@ -175,9 +183,11 @@
             <option value="user">User</option>
             <option value="assistant">Assistant</option>
         </select>
-        <textarea id="chat-input" rows="2" placeholder="Enter user prompt" autocomplete="off"></textarea>
-        <button id="input-set-button" type="button">Set</button>
-        <input id="submit" type="submit" value="Send">
+        <div id="form-bar">
+            <div id="chat-input" rows="4" autocomplete="off" contenteditable="true"></div>
+            <button id="input-set-button" type="button">Set</button>
+            <input id="submit" type="submit" value="Send">
+        </div>
     </form>
     <div id="history-modal" class="modal">
         <h2>History</h2>
