@@ -6,7 +6,7 @@ let apiKey = localStorage.getItem('apiKey') ?? ''
 let model = localStorage.getItem('model') ?? 'gpt-4o-mini'
 
 const chatDiv = document.getElementById('chat') as HTMLElement
-const input = document.getElementById('chat-input') as HTMLInputElement
+const input = document.getElementById('chat-input') as HTMLElement
 const roleSelect = document.getElementById('role-select') as HTMLSelectElement
 
 const historyModal = document.getElementById('history-modal') as HTMLElement
@@ -17,9 +17,9 @@ const configModal = document.getElementById('config-modal') as HTMLElement
 let db: DB
 
 async function submitForm() {
-    const inputValue = input!.value.trim()
+    const inputValue = input.textContent!.trim()
     if (inputValue !== '') {
-        input.value = ''
+        input.textContent = ''
 
         const message = {
             role: roleSelect.value,
@@ -60,13 +60,13 @@ async function submitForm() {
 function addMessageToUi(messageId: number, message: Message) {
     const div = document.createElement('div')
     div.setAttribute('contenteditable', 'true')
-    div.className = message.role
+    div.className = `message-div ${message.role}`
     const nodes = render(message.content)
     for (const child of nodes) {
         div.appendChild(child)
     }
-    // div.innerHTML = message.content.replace(/\n/g, '<br>')
     div.dataset.id = messageId.toString()
+    div.dataset.role = message.role
     div.addEventListener('focusin', function (e) {
         const element = e.currentTarget as HTMLElement
         element.setAttribute('spellcheck', 'true')
@@ -77,11 +77,7 @@ function addMessageToUi(messageId: number, message: Message) {
         const element = e.currentTarget as HTMLElement
         element.setAttribute('spellcheck', 'false')
         const messageKey = parseInt(element.dataset.id!)
-        // const content = htmlToMarkdown(element.childNodes).trim()
         const content = element.textContent?.trim()
-        // for (const child of nodes) {
-        //     element.appendChild(child)
-        // }
         if (!content) {
             currentConversation.deleteMessage(db, messageKey)
             element.parentElement?.removeChild(element)
@@ -91,7 +87,7 @@ function addMessageToUi(messageId: number, message: Message) {
         element.replaceChildren(...nodes)
         currentConversation.updateMessage(db, {
             content: content,
-            role: element.className
+            role: element.dataset.role ?? ''
         }, parseInt(element.dataset.id!))
     })
     chatDiv.appendChild(div)
@@ -190,13 +186,14 @@ async function main() {
     })
 
     document.getElementById('input-set-button')?.addEventListener('click', async function () {
-        const content = input.value.trim()
-        if (content) {
-            input.value = ''
-            const message = { role: roleSelect.value, content }
-            const id = await currentConversation.addMessage(db, message)
-            addMessageToUi(id, message)
+        const content = input.textContent!.trim()
+        if (!content) {
+            console.warn('EMpty input, ignoring')
         }
+        input.textContent = ''
+        const message = { role: roleSelect.value, content }
+        const id = await currentConversation.addMessage(db, message)
+        addMessageToUi(id, message)
     })
 
     input.addEventListener('keydown', async function (e) {

@@ -23,10 +23,9 @@
 
         #chat {
             overflow-y: scroll;
-            padding: 0 1rem;
             flex-grow: 1;
             width: 100%;
-            max-width: 80rem;
+            /* max-width: 80rem; */
             margin: 0 auto;
             box-sizing: border-box;
         }
@@ -64,9 +63,10 @@
             display: flex;
         }
 
-        #chat>div {
-            padding: 0.4rem;
-            margin: 0.8rem;
+        #chat>.message-div {
+            padding: 0.4rem 0.8rem;
+            margin: 0.8rem auto;
+            max-width: 80rem;
         }
 
         #chat>.developer {
