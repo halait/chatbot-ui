@@ -112,15 +112,16 @@
             margin: 0;
         }
 
-        #app-header {
+        #header-buttons-container {
             display: flex;
+            justify-content: space-between;
         }
 
+
         #app-heading {
-            display: none;
-            flex-grow: 1;
-            font-size: 1.5rem;
-            margin: 0.5rem 1rem;
+            font-size: 1.2rem;
+            margin: 0.5rem 0;
+            text-align: center;
         }
 
         .modal {
@@ -158,9 +159,17 @@
             display: none;
         }
 
-        @media (min-width: 32rem) {
+        @media (min-width: 34rem) {
+            #app-header {
+                display: flex;
+            }
+
             #app-heading {
-                display: block;
+                text-align: unset;
+                flex-grow: 1;
+                margin-left: 1rem;
+                margin-right: 1rem;
+                font-size: 1.5rem;
             }
         }
     </style>
@@ -169,12 +178,14 @@
 <body>
     <header id="app-header">
         <h1 id="app-heading">Chat UI</h1>
-        <button id="set-config-button">Config</button>
-        <button id="history-button">History</button>
-        <button id="new-chat-button">New Chat</button>
-        <button id="export-button">Export</button>
-        <button id="import-button">Import</button>
-        <input type="file" id="import-input" accept=".json" />
+        <div id="header-buttons-container">
+            <button id="set-config-button">Config</button>
+            <button id="history-button">History</button>
+            <button id="new-chat-button">New Chat</button>
+            <button id="export-button">Export</button>
+            <button id="import-button">Import</button>
+            <input type="file" id="import-input" accept=".json" />
+        </div>
     </header>
     <div id="chat"></div>
     <form id="form">

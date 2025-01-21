@@ -11,9 +11,9 @@ const historyContainer = document.getElementById('history-container');
 const configModal = document.getElementById('config-modal');
 let db;
 async function submitForm() {
-    const inputValue = input.textContent.trim();
+    const inputValue = input.innerText.trim();
     if (inputValue !== '') {
-        input.textContent = '';
+        input.innerText = '';
         const message = {
             role: roleSelect.value,
             content: inputValue
@@ -62,7 +62,7 @@ function addMessageToUi(messageId, message) {
         const element = e.currentTarget;
         element.setAttribute('spellcheck', 'false');
         const messageKey = parseInt(element.dataset.id);
-        const content = element.textContent?.trim();
+        const content = element.innerText.trim();
         if (!content) {
             currentConversation.deleteMessage(db, messageKey);
             element.parentElement?.removeChild(element);
@@ -161,11 +161,12 @@ async function main() {
         chatDiv.replaceChildren();
     });
     document.getElementById('input-set-button')?.addEventListener('click', async function () {
-        const content = input.textContent.trim();
+        const content = input.innerText.trim();
+        console.log('content: ' + content);
         if (!content) {
-            console.warn('EMpty input, ignoring');
+            console.warn('Empty input, ignoring');
         }
-        input.textContent = '';
+        input.innerText = '';
         const message = { role: roleSelect.value, content };
         const id = await currentConversation.addMessage(db, message);
         addMessageToUi(id, message);
