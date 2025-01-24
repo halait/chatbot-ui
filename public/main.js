@@ -9,6 +9,14 @@ const roleSelect = document.getElementById('role-select');
 const historyModal = document.getElementById('history-modal');
 const historyContainer = document.getElementById('history-container');
 const configModal = document.getElementById('config-modal');
+const apiMap = {
+    'openai.com': {
+        developerRole: 'developer'
+    },
+    'deepseek.com': {
+        developerRole: 'system'
+    }
+};
 let db;
 async function submitForm() {
     const inputValue = input.innerText.trim();
@@ -21,7 +29,18 @@ async function submitForm() {
         const messageId = await currentConversation.addMessage(db, message);
         addMessageToUi(messageId, message);
     }
-    const messages = currentConversation.map(function (conversationMessage) { return conversationMessage.message; });
+    const domains = (new URL(endpoint)).hostname.split('.').slice();
+    if (!domains) {
+        throw new Error('Invalid URL, hostname parse failed');
+    }
+    const domain = domains.slice(Math.max(0, domains.length - 2)).join('.');
+    const api = apiMap[domain] ?? 'openai.com';
+    const messages = currentConversation.map(function (conversationMessage) {
+        return {
+            role: conversationMessage.message.role === 'developer' ? api.developerRole : conversationMessage.message.role,
+            content: conversationMessage.message.content
+        };
+    });
     if (!apiKey) {
         throw new Error('API Key missing');
     }

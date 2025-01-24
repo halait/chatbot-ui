@@ -14,6 +14,15 @@ const historyContainer = document.getElementById('history-container') as HTMLEle
 
 const configModal = document.getElementById('config-modal') as HTMLElement
 
+const apiMap: {[key: string]: ApiConfiguration} = {
+    'openai.com': {
+        developerRole: 'developer'
+    },
+    'deepseek.com': {
+        developerRole: 'system'
+    }
+}
+
 let db: DB
 
 async function submitForm() {
@@ -31,11 +40,24 @@ async function submitForm() {
         addMessageToUi(messageId, message)
     }
 
-    const messages = currentConversation.map(function (conversationMessage) { return conversationMessage.message })
+    const domains = (new URL(endpoint)).hostname.split('.').slice()
+    if(!domains) {
+        throw new Error('Invalid URL, hostname parse failed')
+    }
+    const domain = domains.slice(Math.max(0, domains.length - 2)).join('.')
+
+    const api = apiMap[domain] ?? 'openai.com'
+    const messages = currentConversation.map(function (conversationMessage) {
+         return {
+            role: conversationMessage.message.role === 'developer' ? api.developerRole : conversationMessage.message.role,
+            content: conversationMessage.message.content
+         }
+    })
 
     if (!apiKey) {
         throw new Error('API Key missing')
     }
+
     const result = await (await fetch(endpoint, {
         method: 'post',
         headers: {
@@ -492,4 +514,8 @@ interface Conversation {
     title: string
     timestamp: number
     root: number
+}
+
+interface ApiConfiguration {
+    developerRole: string
 }
