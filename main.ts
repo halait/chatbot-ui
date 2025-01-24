@@ -3,7 +3,10 @@ import { render, htmlToMarkdown } from './markdown_renderer.js'
 
 let endpoint = localStorage.getItem('endpoint') ?? 'https://api.openai.com/v1/chat/completions'
 let apiKey = localStorage.getItem('apiKey') ?? ''
-let model = localStorage.getItem('model') ?? 'gpt-4o-mini'
+
+let apiParams: { [key: string]: any } = localStorage.getItem('apiParams') ? JSON.parse(localStorage.getItem('apiParams')!) as { [key: string]: any } : {
+    'model': 'gpt-4o-mini'
+}
 
 const chatDiv = document.getElementById('chat') as HTMLElement
 const input = document.getElementById('chat-input') as HTMLElement
@@ -14,7 +17,7 @@ const historyContainer = document.getElementById('history-container') as HTMLEle
 
 const configModal = document.getElementById('config-modal') as HTMLElement
 
-const apiMap: {[key: string]: ApiConfiguration} = {
+const apiMap: { [key: string]: ApiConfiguration } = {
     'openai.com': {
         developerRole: 'developer'
     },
@@ -41,21 +44,32 @@ async function submitForm() {
     }
 
     const domains = (new URL(endpoint)).hostname.split('.').slice()
-    if(!domains) {
+    if (!domains) {
         throw new Error('Invalid URL, hostname parse failed')
     }
     const domain = domains.slice(Math.max(0, domains.length - 2)).join('.')
 
     const api = apiMap[domain] ?? 'openai.com'
     const messages = currentConversation.map(function (conversationMessage) {
-         return {
+        return {
             role: conversationMessage.message.role === 'developer' ? api.developerRole : conversationMessage.message.role,
             content: conversationMessage.message.content
-         }
+        }
     })
 
     if (!apiKey) {
         throw new Error('API Key missing')
+    }
+
+    const body = {
+        store: false,
+        messages: messages
+    } as any
+
+    for (const key of Object.keys(apiParams)) {
+        if (apiParams[key]) {
+            body[key] = apiParams[key]
+        }
     }
 
     const result = await (await fetch(endpoint, {
@@ -64,11 +78,7 @@ async function submitForm() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({
-            model,
-            store: false,
-            messages: messages
-        })
+        body: JSON.stringify(body)
     })).json()
 
     const output = result.choices[0].message.content
@@ -236,8 +246,12 @@ async function main() {
         keyInput.value = apiKey
         const endpointInput = document.getElementById('set-endpoint-input') as HTMLInputElement
         endpointInput.value = endpoint
-        const modelInput = document.getElementById('set-model-input') as HTMLInputElement
-        modelInput.value = model
+
+        const apiParamInputs = document.querySelectorAll('#config-form > [data-api-param]') as NodeListOf<HTMLInputElement>
+
+        for (const input of apiParamInputs) {
+            input.value = apiParams[input.getAttribute('data-api-param')!] ?? ''
+        }
 
         configModal.style.display = 'block'
     })
@@ -250,9 +264,17 @@ async function main() {
         const endpointInput = document.getElementById('set-endpoint-input') as HTMLInputElement
         endpoint = endpointInput.value
         localStorage.setItem('endpoint', endpoint)
-        const modelInput = document.getElementById('set-model-input') as HTMLInputElement
-        model = modelInput.value
-        localStorage.setItem('model', model)
+
+        const apiParamInputs = document.querySelectorAll('#config-form > [data-api-param]') as NodeListOf<HTMLInputElement>
+
+        for (const input of apiParamInputs) {
+            if(input.value) {
+                const param = input.getAttribute('data-api-param')!
+                apiParams[param] = input.type === 'number' ? parseFloat(input.value) : input.value
+            }
+        }
+
+        localStorage.setItem('apiParams', JSON.stringify(apiParams))
 
         configModal.style.display = 'none'
     })

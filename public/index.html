@@ -209,10 +209,24 @@
         <form id="config-form">
             <label for="set-endpoint-input">Endpoint</label>
             <input id="set-endpoint-input" type="url">
-            <label for="set-model-input">Model</label>
-            <input id="set-model-input" type="text">
             <label for="set-key-input">Key</label>
             <input id="set-key-input" type="password">
+
+            <label for="set-model-input">Model</label>
+            <input id="set-model-input" type="text" data-api-param="model">
+
+            <label for="set-temperture-input">Temperture</label>
+            <input id="set-temperture-input" type="number" step="any" data-api-param="temperture">
+
+            <label for="set-frequency-penalty-input">Frequency Penalty</label>
+            <input id="set-frequency-penalty-input" type="number" step="any" data-api-param="frequency_penalty">
+
+            <label for="set-presence-penalty-input">Presence Penalty</label>
+            <input id="set-presence-penalty-input" type="number" step="any" data-api-param="presence_penalty">
+
+            <label for="set-top-p-input">Top P</label>
+            <input id="set-top-p-input" type="number" step="any" data-api-param="top_p">
+            
             <input type="submit" value="Submit">
         </form>
     </div>

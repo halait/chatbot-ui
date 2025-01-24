@@ -2,7 +2,9 @@ import { DB } from './db.js';
 import { render, htmlToMarkdown } from './markdown_renderer.js';
 let endpoint = localStorage.getItem('endpoint') ?? 'https://api.openai.com/v1/chat/completions';
 let apiKey = localStorage.getItem('apiKey') ?? '';
-let model = localStorage.getItem('model') ?? 'gpt-4o-mini';
+let apiParams = localStorage.getItem('apiParams') ? JSON.parse(localStorage.getItem('apiParams')) : {
+    'model': 'gpt-4o-mini'
+};
 const chatDiv = document.getElementById('chat');
 const input = document.getElementById('chat-input');
 const roleSelect = document.getElementById('role-select');
@@ -44,17 +46,22 @@ async function submitForm() {
     if (!apiKey) {
         throw new Error('API Key missing');
     }
+    const body = {
+        store: false,
+        messages: messages
+    };
+    for (const key of Object.keys(apiParams)) {
+        if (apiParams[key]) {
+            body[key] = apiParams[key];
+        }
+    }
     const result = await (await fetch(endpoint, {
         method: 'post',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({
-            model,
-            store: false,
-            messages: messages
-        })
+        body: JSON.stringify(body)
     })).json();
     const output = result.choices[0].message.content;
     const assistantMessage = { role: 'assistant', content: output };
@@ -206,8 +213,10 @@ async function main() {
         keyInput.value = apiKey;
         const endpointInput = document.getElementById('set-endpoint-input');
         endpointInput.value = endpoint;
-        const modelInput = document.getElementById('set-model-input');
-        modelInput.value = model;
+        const apiParamInputs = document.querySelectorAll('#config-form > [data-api-param]');
+        for (const input of apiParamInputs) {
+            input.value = apiParams[input.getAttribute('data-api-param')] ?? '';
+        }
         configModal.style.display = 'block';
     });
     document.getElementById('config-form')?.addEventListener('submit', function (e) {
@@ -218,9 +227,14 @@ async function main() {
         const endpointInput = document.getElementById('set-endpoint-input');
         endpoint = endpointInput.value;
         localStorage.setItem('endpoint', endpoint);
-        const modelInput = document.getElementById('set-model-input');
-        model = modelInput.value;
-        localStorage.setItem('model', model);
+        const apiParamInputs = document.querySelectorAll('#config-form > [data-api-param]');
+        for (const input of apiParamInputs) {
+            if (input.value) {
+                const param = input.getAttribute('data-api-param');
+                apiParams[param] = input.type === 'number' ? parseFloat(input.value) : input.value;
+            }
+        }
+        localStorage.setItem('apiParams', JSON.stringify(apiParams));
         configModal.style.display = 'none';
     });
     document.getElementById('export-button')?.addEventListener('click', function () {
