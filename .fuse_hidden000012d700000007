@@ -1,0 +1,148 @@
+[debug] [2025-01-24T05:48:06.033Z] ----------------------------------------------------------------------
+[debug] [2025-01-24T05:48:06.034Z] Command:       /home/h/.nvm/versions/node/v20.13.1/bin/node /home/h/.nvm/versions/node/v20.13.1/bin/firebase serve
+[debug] [2025-01-24T05:48:06.034Z] CLI Version:   13.29.1
+[debug] [2025-01-24T05:48:06.034Z] Platform:      linux
+[debug] [2025-01-24T05:48:06.034Z] Node Version:  v20.13.1
+[debug] [2025-01-24T05:48:06.034Z] Time:          Fri Jan 24 2025 00:48:06 GMT-0500 (Eastern Standard Time)
+[debug] [2025-01-24T05:48:06.034Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-01-24T05:48:06.069Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-01-24T05:48:06.069Z] > authorizing via signed-in user (puneethalait@gmail.com)
+[debug] [2025-01-24T05:48:06.069Z] [iam] checking project chat-ui-bebf8 for permissions ["firebase.projects.get"]
+[debug] [2025-01-24T05:48:06.070Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:48:06.070Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:48:06.070Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/chat-ui-bebf8:testIamPermissions [none]
+[debug] [2025-01-24T05:48:06.070Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/chat-ui-bebf8:testIamPermissions x-goog-quota-user=projects/chat-ui-bebf8
+[debug] [2025-01-24T05:48:06.070Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/chat-ui-bebf8:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-01-24T05:48:06.294Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/chat-ui-bebf8:testIamPermissions 200
+[debug] [2025-01-24T05:48:06.294Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/chat-ui-bebf8:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-01-24T05:48:06.294Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:48:06.294Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:48:06.295Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/chat-ui-bebf8 [none]
+[debug] [2025-01-24T05:48:06.396Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/chat-ui-bebf8 200
+[debug] [2025-01-24T05:48:06.396Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/chat-ui-bebf8 {"projectNumber":"904243807522","projectId":"chat-ui-bebf8","lifecycleState":"ACTIVE","name":"chat-ui","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-01-06T19:01:20.940541Z"}
+[info] 
+[info] === Serving from '/mnt/shared/projects/chat-ui'...
+[info] 
+[debug] [2025-01-24T05:48:06.397Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:48:06.397Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:48:06.397Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/chat-ui-bebf8/sites 
+[debug] [2025-01-24T05:48:07.172Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/chat-ui-bebf8/sites 200
+[debug] [2025-01-24T05:48:07.173Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/chat-ui-bebf8/sites {"sites":[{"name":"projects/chat-ui-bebf8/sites/chat-ui-bebf8","defaultUrl":"https://chat-ui-bebf8.web.app","type":"DEFAULT_SITE"}]}
+[debug] [2025-01-24T05:48:07.173Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:48:07.173Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:48:07.173Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/chat-ui-bebf8/webApps/-/config [none]
+[debug] [2025-01-24T05:48:07.732Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/chat-ui-bebf8/webApps/-/config 200
+[debug] [2025-01-24T05:48:07.732Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/chat-ui-bebf8/webApps/-/config {"projectId":"chat-ui-bebf8","storageBucket":"chat-ui-bebf8.firebasestorage.app","apiKey":"AIzaSyDO_nW4ljTRIYY7KjDjLyRoxj8EZOCKRss","authDomain":"chat-ui-bebf8.firebaseapp.com","messagingSenderId":"904243807522"}
+[debug] [2025-01-24T05:48:07.740Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:48:07.740Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:48:07.741Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/chat-ui-bebf8 [none]
+[debug] [2025-01-24T05:48:07.919Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/chat-ui-bebf8 200
+[debug] [2025-01-24T05:48:07.919Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/chat-ui-bebf8 {"projectId":"chat-ui-bebf8","projectNumber":"904243807522","displayName":"chat-ui","name":"projects/chat-ui-bebf8","resources":{"hostingSite":"chat-ui-bebf8"},"state":"ACTIVE","etag":"1_7cdd31d5-702b-4a93-8c5c-dffb492f38c2"}
+[info] i  hosting[chat-ui-bebf8]: Serving hosting files from: public {"metadata":{"emulator":{"name":"hosting"},"message":"Serving hosting files from: \u001b[1mpublic\u001b[22m"}}
+[info] ✔  hosting[chat-ui-bebf8]: Local server: http://localhost:5000 {"metadata":{"emulator":{"name":"hosting"},"message":"Local server: \u001b[4m\u001b[1mhttp://localhost:5000\u001b[22m\u001b[24m"}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:10 +0000] "GET / HTTP/1.1" 200 - "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:10 +0000] \"GET / HTTP/1.1\" 200 - \"-\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:10 +0000] "GET /main.js HTTP/1.1" 200 - "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:10 +0000] \"GET /main.js HTTP/1.1\" 200 - \"http://localhost:5000/\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:10 +0000] "GET /db.js HTTP/1.1" 200 - "http://localhost:5000/main.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:10 +0000] \"GET /db.js HTTP/1.1\" 200 - \"http://localhost:5000/main.js\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:10 +0000] "GET /markdown_renderer.js HTTP/1.1" 200 - "http://localhost:5000/main.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:10 +0000] \"GET /markdown_renderer.js HTTP/1.1\" 200 - \"http://localhost:5000/main.js\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:10 +0000] "GET /favicon.ico HTTP/1.1" 200 - "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:10 +0000] \"GET /favicon.ico HTTP/1.1\" 200 - \"http://localhost:5000/\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:13 +0000] "GET / HTTP/1.1" 200 - "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:13 +0000] \"GET / HTTP/1.1\" 200 - \"-\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:13 +0000] "GET /main.js HTTP/1.1" 200 - "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:13 +0000] \"GET /main.js HTTP/1.1\" 200 - \"http://localhost:5000/\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:13 +0000] "GET /db.js HTTP/1.1" 200 - "http://localhost:5000/main.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:13 +0000] \"GET /db.js HTTP/1.1\" 200 - \"http://localhost:5000/main.js\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:13 +0000] "GET /markdown_renderer.js HTTP/1.1" 200 - "http://localhost:5000/main.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:13 +0000] \"GET /markdown_renderer.js HTTP/1.1\" 200 - \"http://localhost:5000/main.js\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:13 +0000] "GET /favicon.ico HTTP/1.1" 200 - "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:13 +0000] \"GET /favicon.ico HTTP/1.1\" 200 - \"http://localhost:5000/\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:39 +0000] "GET / HTTP/1.1" 200 - "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:39 +0000] \"GET / HTTP/1.1\" 200 - \"-\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:39 +0000] "GET /main.js HTTP/1.1" 200 - "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:39 +0000] \"GET /main.js HTTP/1.1\" 200 - \"http://localhost:5000/\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:39 +0000] "GET /db.js HTTP/1.1" 200 - "http://localhost:5000/main.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:39 +0000] \"GET /db.js HTTP/1.1\" 200 - \"http://localhost:5000/main.js\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:39 +0000] "GET /markdown_renderer.js HTTP/1.1" 200 - "http://localhost:5000/main.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:39 +0000] \"GET /markdown_renderer.js HTTP/1.1\" 200 - \"http://localhost:5000/main.js\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[info] i  hosting: ::1 - - [24/Jan/2025:05:48:39 +0000] "GET /favicon.ico HTTP/1.1" 200 - "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [24/Jan/2025:05:48:39 +0000] \"GET /favicon.ico HTTP/1.1\" 200 - \"http://localhost:5000/\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\""}}
+[debug] [2025-01-24T05:50:03.803Z] ----------------------------------------------------------------------
+[debug] [2025-01-24T05:50:03.804Z] Command:       /home/h/.nvm/versions/node/v20.13.1/bin/node /home/h/.nvm/versions/node/v20.13.1/bin/firebase deploy
+[debug] [2025-01-24T05:50:03.804Z] CLI Version:   13.29.1
+[debug] [2025-01-24T05:50:03.804Z] Platform:      linux
+[debug] [2025-01-24T05:50:03.804Z] Node Version:  v20.13.1
+[debug] [2025-01-24T05:50:03.804Z] Time:          Fri Jan 24 2025 00:50:03 GMT-0500 (Eastern Standard Time)
+[debug] [2025-01-24T05:50:03.804Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-01-24T05:50:03.835Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-01-24T05:50:03.836Z] > authorizing via signed-in user (puneethalait@gmail.com)
+[debug] [2025-01-24T05:50:03.836Z] [iam] checking project chat-ui-bebf8 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2025-01-24T05:50:03.836Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:03.836Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:03.837Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/chat-ui-bebf8:testIamPermissions [none]
+[debug] [2025-01-24T05:50:03.837Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/chat-ui-bebf8:testIamPermissions x-goog-quota-user=projects/chat-ui-bebf8
+[debug] [2025-01-24T05:50:03.837Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/chat-ui-bebf8:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-01-24T05:50:04.131Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/chat-ui-bebf8:testIamPermissions 200
+[debug] [2025-01-24T05:50:04.131Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/chat-ui-bebf8:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-01-24T05:50:04.131Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:04.131Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:04.132Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/chat-ui-bebf8 [none]
+[debug] [2025-01-24T05:50:04.543Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/chat-ui-bebf8 200
+[debug] [2025-01-24T05:50:04.543Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/chat-ui-bebf8 {"projectId":"chat-ui-bebf8","projectNumber":"904243807522","displayName":"chat-ui","name":"projects/chat-ui-bebf8","resources":{"hostingSite":"chat-ui-bebf8"},"state":"ACTIVE","etag":"1_7cdd31d5-702b-4a93-8c5c-dffb492f38c2"}
+[info] 
+[info] === Deploying to 'chat-ui-bebf8'...
+[info] 
+[info] i  deploying hosting 
+[debug] [2025-01-24T05:50:04.546Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:04.546Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:04.546Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/chat-ui-bebf8/versions [none]
+[debug] [2025-01-24T05:50:04.546Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/chat-ui-bebf8/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2025-01-24T05:50:05.349Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/chat-ui-bebf8/versions 200
+[debug] [2025-01-24T05:50:05.349Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/chat-ui-bebf8/versions {"name":"projects/904243807522/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506","status":"CREATED","config":{},"labels":{"deployment-tool":"cli-firebase"}}
+[info] i  hosting[chat-ui-bebf8]: beginning deploy... 
+[info] i  hosting[chat-ui-bebf8]: found 6 files in public 
+[debug] [2025-01-24T05:50:05.359Z] [hosting] uploading with 200 concurrency
+[debug] [2025-01-24T05:50:05.364Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:05.364Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:05.365Z] [hosting] hash cache [cHVibGlj] stored for 6 files
+[debug] [2025-01-24T05:50:05.365Z] [hosting][hash queue][FINAL] {"max":3,"min":0,"avg":2.1666666666666665,"active":0,"complete":6,"success":6,"errored":0,"retried":0,"total":6,"elapsed":4}
+[debug] [2025-01-24T05:50:05.365Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/904243807522/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506:populateFiles [none]
+[debug] [2025-01-24T05:50:05.365Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/904243807522/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506:populateFiles {"files":{"/index.html":"ae6a65e13c165009238f0d548ce9530308352882f0465ac376d09a9a5754d4ea","/scratch.js":"d7ca93cbce71c271f963e6380351dee8551294e9f9caaeedb92bc3e150738cc6","/db.js":"a8fcd95898d2872b782ec0de8b9de49c93f19508c5b512db7dfba9fba6b011a1","/chat-gpt-conversation-parser.js":"aaf40376f942215decbfeae5ebb29cc60fba84979ce8aad10310e59374d25e2d","/markdown_renderer.js":"ca2cec09f10eca2158352e6da3c5eb03fafc744130ec70b9f0e79af9f4b6260a","/main.js":"ee86da82f4595d711f775208a5f73b99e31d4b3e5c5085b9a7757ee193221a77"}}
+[debug] [2025-01-24T05:50:05.693Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/904243807522/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506:populateFiles 200
+[debug] [2025-01-24T05:50:05.693Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/904243807522/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506:populateFiles {"uploadRequiredHashes":["ee86da82f4595d711f775208a5f73b99e31d4b3e5c5085b9a7757ee193221a77"],"uploadUrl":"https://upload-firebasehosting.googleapis.com/upload/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506/files"}
+[debug] [2025-01-24T05:50:05.694Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:05.694Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:05.694Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506/files/ee86da82f4595d711f775208a5f73b99e31d4b3e5c5085b9a7757ee193221a77 [none]
+[debug] [2025-01-24T05:50:05.694Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506/files/ee86da82f4595d711f775208a5f73b99e31d4b3e5c5085b9a7757ee193221a77 [stream]
+[debug] [2025-01-24T05:50:05.695Z] [hosting][populate queue][FINAL] {"max":330,"min":330,"avg":330,"active":0,"complete":1,"success":1,"errored":0,"retried":0,"total":1,"elapsed":331}
+[debug] [2025-01-24T05:50:05.695Z] [hosting] uploads queued: 1
+[debug] [2025-01-24T05:50:06.571Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506/files/ee86da82f4595d711f775208a5f73b99e31d4b3e5c5085b9a7757ee193221a77 200
+[debug] [2025-01-24T05:50:06.571Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506/files/ee86da82f4595d711f775208a5f73b99e31d4b3e5c5085b9a7757ee193221a77 [stream]
+[debug] [2025-01-24T05:50:06.571Z] [hosting][upload queue][FINAL] {"max":878,"min":878,"avg":878,"active":0,"complete":1,"success":1,"errored":0,"retried":0,"total":1,"elapsed":878}
+[info] ✔  hosting[chat-ui-bebf8]: file upload complete 
+[debug] [2025-01-24T05:50:06.572Z] [hosting] deploy completed after 1220ms
+[debug] [2025-01-24T05:50:06.572Z] [
+  {
+    "config": {
+      "public": "public",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "site": "chat-ui-bebf8"
+    },
+    "version": "projects/904243807522/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506"
+  }
+]
+[info] i  hosting[chat-ui-bebf8]: finalizing version... 
+[debug] [2025-01-24T05:50:06.573Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:06.573Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:06.574Z] >>> [apiv2][query] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506 updateMask=status%2Cconfig
+[debug] [2025-01-24T05:50:06.574Z] >>> [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506 {"status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]}}
+[debug] [2025-01-24T05:50:07.197Z] <<< [apiv2][status] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506 200
+[debug] [2025-01-24T05:50:07.197Z] <<< [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506 {"name":"projects/904243807522/sites/chat-ui-bebf8/versions/6cc055f1ec0ac506","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2025-01-24T05:50:04.963262Z","createUser":{"email":"puneethalait@gmail.com"},"finalizeTime":"2025-01-24T05:50:07.110796Z","finalizeUser":{"email":"puneethalait@gmail.com"}}
+[debug] [2025-01-24T05:50:07.197Z] [hosting] finalized version for chat-ui-bebf8:[object Object]
+[info] ✔  hosting[chat-ui-bebf8]: version finalized 
+[info] i  hosting[chat-ui-bebf8]: releasing new version... 
+[debug] [2025-01-24T05:50:07.198Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:07.198Z] Checked if tokens are valid: true, expires at: 1737700818299
+[debug] [2025-01-24T05:50:07.198Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/chat-ui-bebf8/channels/live/releases versionName=projects%2F904243807522%2Fsites%2Fchat-ui-bebf8%2Fversions%2F6cc055f1ec0ac506
+[debug] [2025-01-24T05:50:07.198Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/chat-ui-bebf8/channels/live/releases {}
+[debug] [2025-01-24T05:50:07.715Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/chat-ui-bebf8/channels/live/releases 200

@@ -268,10 +268,8 @@ async function main() {
         const apiParamInputs = document.querySelectorAll('#config-form > [data-api-param]') as NodeListOf<HTMLInputElement>
 
         for (const input of apiParamInputs) {
-            if(input.value) {
-                const param = input.getAttribute('data-api-param')!
-                apiParams[param] = input.type === 'number' ? parseFloat(input.value) : input.value
-            }
+            const param = input.getAttribute('data-api-param')!
+            apiParams[param] = input.value && input.type === 'number' ? parseFloat(input.value) : input.value
         }
 
         localStorage.setItem('apiParams', JSON.stringify(apiParams))
