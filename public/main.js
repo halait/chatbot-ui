@@ -13,13 +13,17 @@ const historyContainer = document.getElementById('history-container');
 const configModal = document.getElementById('config-modal');
 const apiMap = {
     'openai.com': {
-        developerRole: 'developer'
+        developerRole: 'developer',
+        stream: true
     },
     'deepseek.com': {
-        developerRole: 'system'
+        developerRole: 'system',
+        stream: true
     }
 };
 let db;
+let lastChatDivScroll = 0;
+let lastCharDivScrollTop = 0;
 async function submitForm() {
     const inputValue = input.innerText.trim();
     if (inputValue !== '') {
@@ -55,18 +59,65 @@ async function submitForm() {
             body[key] = apiParams[key];
         }
     }
-    const result = await (await fetch(endpoint, {
+    if (api.stream) {
+        body['stream'] = api.stream;
+    }
+    const result = await fetch(endpoint, {
         method: 'post',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify(body)
-    })).json();
-    const output = result.choices[0].message.content;
-    const assistantMessage = { role: 'assistant', content: output };
-    const assistantMessageId = await currentConversation.addMessage(db, assistantMessage);
-    addMessageToUi(assistantMessageId, assistantMessage);
+    });
+    if (!api.stream) {
+        const output = (await result.json()).choices[0].message.content;
+        const assistantMessage = { role: 'assistant', content: output };
+        const assistantMessageId = await currentConversation.addMessage(db, assistantMessage);
+        addMessageToUi(assistantMessageId, assistantMessage);
+    }
+    else {
+        if (result.body === null) {
+            throw new Error('response missing');
+        }
+        const utf8decoder = new TextDecoder();
+        const assistantMessage = { role: 'assistant', content: '' };
+        const assistantMessageId = await currentConversation.addMessage(db, assistantMessage);
+        const element = addMessageToUi(assistantMessageId, assistantMessage);
+        const message = [];
+        let start = Date.now();
+        let lastUpdate = 0;
+        for await (const chunk of result.body) {
+            const lines = utf8decoder.decode(chunk).split('\n');
+            for (let line of lines) {
+                if (line === '') {
+                    continue;
+                }
+                if (line.slice(0, 6) !== 'data: ') {
+                    throw new Error('Unexpected stream data');
+                }
+                line = line.slice(6);
+                if (line === '[DONE]') {
+                    assistantMessage.content = message.join('');
+                    updateUiMessage(element, assistantMessage.content);
+                    if (start > lastChatDivScroll) {
+                        chatDiv.scrollTop = chatDiv.scrollHeight;
+                    }
+                    await currentConversation.updateMessage(db, assistantMessage, assistantMessageId);
+                    break;
+                }
+                message.push(JSON.parse(line).choices[0].delta.content);
+                const now = Date.now();
+                if (now - lastUpdate > 200) {
+                    updateUiMessage(element, message.join(''));
+                    if (start > lastChatDivScroll) {
+                        chatDiv.scrollTop = chatDiv.scrollHeight;
+                    }
+                    lastUpdate = now;
+                }
+            }
+        }
+    }
 }
 function addMessageToUi(messageId, message) {
     const div = document.createElement('div');
@@ -81,7 +132,6 @@ function addMessageToUi(messageId, message) {
     div.addEventListener('focusin', function (e) {
         const element = e.currentTarget;
         element.setAttribute('spellcheck', 'true');
-        element.style.whiteSpace = 'pre-wrap';
         element.replaceChildren(document.createTextNode(htmlToMarkdown(element.childNodes)));
     });
     div.addEventListener('focusout', function (e) {
@@ -103,6 +153,18 @@ function addMessageToUi(messageId, message) {
     });
     chatDiv.appendChild(div);
     chatDiv.scrollTop = chatDiv.scrollHeight;
+    return div;
+}
+chatDiv.addEventListener('scroll', function () {
+    const scrollTop = chatDiv.scrollTop;
+    if (scrollTop - lastCharDivScrollTop < 0) {
+        lastChatDivScroll = Date.now();
+    }
+    lastCharDivScrollTop = scrollTop;
+});
+function updateUiMessage(element, content) {
+    const nodes = render(content);
+    element.replaceChildren(...nodes);
 }
 async function setConversation(conversationKey, conversation) {
     currentConversation.clear();

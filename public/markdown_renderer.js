@@ -92,20 +92,18 @@ class Parser {
                 this.increment();
                 return elements;
             }
-            if (this.isTokenType('text')) {
-                if (endTokenTypes.length !== 0) {
-                    elements.push({ name: 'text', value: this.getCurrentToken().value });
-                    this.increment();
-                }
-                else {
-                    elements.push(this.parseP());
-                }
+            if (this.isTokenType('numberSigns')) {
+                elements.push(this.parseH());
+            }
+            else if (endTokenTypes.length === 0) {
+                elements.push(this.parseP());
+            }
+            else if (this.isTokenType('text')) {
+                elements.push({ name: 'text', value: this.getCurrentToken().value });
+                this.increment();
             }
             else if (this.isTokenType('asterisks')) {
                 elements.push(this.parseEm());
-            }
-            else if (this.isTokenType('numberSigns')) {
-                elements.push(this.parseH());
             }
             else if (this.isTokenType('newLine') || this.isTokenType('newLines')) {
                 this.increment();
@@ -144,7 +142,7 @@ class Parser {
             throw new Error('Heading level more than 6.');
         }
         this.increment();
-        if (this.getCurrentToken().type === 'text') {
+        if (this.getCurrentToken()?.type === 'text') {
             this.tokens[this.i].value = this.tokens[this.i].value.trim();
         }
         return { name: ('h' + length), children: this.parse('newLines', 'newLine') };

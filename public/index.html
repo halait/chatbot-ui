@@ -63,21 +63,22 @@
             display: flex;
         }
 
-        #chat>.message-div {
+        .message-div {
             padding: 0.4rem 0.8rem;
             margin: 0.8rem auto;
             max-width: 80rem;
+            white-space: pre-wrap;
         }
 
-        #chat>.developer {
+        #chat > .developer {
             background-color: var(--developer-message-background);
         }
 
-        #chat>.assistant {
+        #chat > .assistant {
             background-color: var(--assistant-message-background);
         }
 
-        #chat>.user {
+        #chat > .user {
             background-color: var(--user-message-background);
         }
 
@@ -114,7 +115,7 @@
 
         #header-buttons-container {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-around;
         }
 
 
@@ -226,7 +227,7 @@
 
             <label for="set-top-p-input">Top P</label>
             <input id="set-top-p-input" type="number" step="any" data-api-param="top_p">
-            
+
             <input type="submit" value="Submit">
         </form>
     </div>
