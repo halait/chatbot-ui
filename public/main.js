@@ -14,9 +14,14 @@ const configModal = document.getElementById('config-modal');
 const apiMap = {
     'openai.com': {
         developerRole: 'developer',
-        stream: true
+        stream: true,
+        store: false
     },
     'deepseek.com': {
+        developerRole: 'system',
+        stream: true
+    },
+    'mistral.ai': {
         developerRole: 'system',
         stream: true
     }
@@ -51,7 +56,6 @@ async function submitForm() {
         throw new Error('API Key missing');
     }
     const body = {
-        store: false,
         messages: messages
     };
     for (const key of Object.keys(apiParams)) {
@@ -61,6 +65,9 @@ async function submitForm() {
     }
     if (api.stream) {
         body['stream'] = api.stream;
+    }
+    if (api.store !== undefined) {
+        body['store'] = api.store;
     }
     const result = await fetch(endpoint, {
         method: 'post',

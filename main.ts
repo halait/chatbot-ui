@@ -20,9 +20,14 @@ const configModal = document.getElementById('config-modal') as HTMLElement
 const apiMap: { [key: string]: ApiConfiguration } = {
     'openai.com': {
         developerRole: 'developer',
-        stream: true
+        stream: true,
+        store: false
     },
     'deepseek.com': {
+        developerRole: 'system',
+        stream: true
+    },
+    'mistral.ai': {
         developerRole: 'system',
         stream: true
     }
@@ -67,7 +72,6 @@ async function submitForm() {
     }
 
     const body = {
-        store: false,
         messages: messages
     } as any
 
@@ -78,6 +82,10 @@ async function submitForm() {
     }
     if (api.stream) {
         body['stream'] = api.stream
+    }
+
+    if(api.store !== undefined) {
+        body['store'] = api.store
     }
 
     const result = await fetch(endpoint, {
@@ -606,4 +614,5 @@ interface Conversation {
 interface ApiConfiguration {
     developerRole: string,
     stream?: boolean
+    store?: boolean
 }
