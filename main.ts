@@ -14,8 +14,8 @@ const roleSelect = document.getElementById('role-select') as HTMLSelectElement
 
 const historyModal = document.getElementById('history-modal') as HTMLElement
 const historyContainer = document.getElementById('history-container') as HTMLElement
-
 const configModal = document.getElementById('config-modal') as HTMLElement
+const errorModal = document.getElementById('error-modal') as HTMLElement
 
 const apiMap: { [key: string]: ApiConfiguration } = {
     'openai.com': {
@@ -53,7 +53,7 @@ async function submitForm() {
         addMessageToUi(messageId, message)
     }
 
-    const domains = (new URL(endpoint)).hostname.split('.').slice()
+    const domains = (new URL(endpoint)).hostname.split('.')
     if (!domains) {
         throw new Error('Invalid URL, hostname parse failed')
     }
@@ -84,11 +84,11 @@ async function submitForm() {
         body['stream'] = api.stream
     }
 
-    if(api.store !== undefined) {
+    if (api.store !== undefined) {
         body['store'] = api.store
     }
 
-    const result = await fetch(endpoint, {
+    const response = await fetch(endpoint, {
         method: 'post',
         headers: {
             'Content-Type': 'application/json',
@@ -97,15 +97,20 @@ async function submitForm() {
         body: JSON.stringify(body)
     })
 
+    if (!response.ok) {
+        showError(await response.text())
+        return
+    }
+    
     if (!api.stream) {
-        const output = (await result.json()).choices[0].message.content
+        const output = (await response.json()).choices[0].message.content
         const assistantMessage = { role: 'assistant', content: output }
 
         const assistantMessageId = await currentConversation.addMessage(db, assistantMessage)
 
         addMessageToUi(assistantMessageId, assistantMessage)
     } else {
-        if (result.body === null) {
+        if (response.body === null) {
             throw new Error('response missing')
         }
 
@@ -116,10 +121,10 @@ async function submitForm() {
         const message: string[] = []
         let start = Date.now()
         let lastUpdate = 0
-        for await (const chunk of result.body) {
+        for await (const chunk of response.body) {
             const lines = utf8decoder.decode(chunk).split('\n')
-            for(let line of lines) {
-                if(line === '') {
+            for (let line of lines) {
+                if (line === '') {
                     continue;
                 }
                 if (line.slice(0, 6) !== 'data: ') {
@@ -129,7 +134,7 @@ async function submitForm() {
                 if (line === '[DONE]') {
                     assistantMessage.content = message.join('')
                     updateUiMessage(element, assistantMessage.content)
-                    if(start > lastChatDivScroll) {
+                    if (start > lastChatDivScroll) {
                         chatDiv.scrollTop = chatDiv.scrollHeight
                     }
                     await currentConversation.updateMessage(db, assistantMessage, assistantMessageId)
@@ -137,14 +142,14 @@ async function submitForm() {
                 }
                 message.push(JSON.parse(line).choices[0].delta.content)
                 const now = Date.now()
-                if(now - lastUpdate > 200) {
+                if (now - lastUpdate > 200) {
                     updateUiMessage(element, message.join(''))
-                    if(start > lastChatDivScroll) {
+                    if (start > lastChatDivScroll) {
                         chatDiv.scrollTop = chatDiv.scrollHeight
                     }
                     lastUpdate = now
                 }
-                
+
             }
         }
     }
@@ -188,9 +193,9 @@ function addMessageToUi(messageId: number, message: Message): HTMLDivElement {
     return div
 }
 
-chatDiv.addEventListener('scroll', function() {
+chatDiv.addEventListener('scroll', function () {
     const scrollTop = chatDiv.scrollTop
-    if(scrollTop - lastCharDivScrollTop < 0) {
+    if (scrollTop - lastCharDivScrollTop < 0) {
         lastChatDivScroll = Date.now()
     }
     lastCharDivScrollTop = scrollTop
@@ -241,6 +246,12 @@ window.addEventListener("error", function (e) {
 window.addEventListener('unhandledrejection', function (e) {
     alert("Error occurred: " + e.reason.message);
 })
+
+function showError(message: string) {
+    const errorText = document.getElementById('error-message') as HTMLElement
+    errorText.textContent = message
+    errorModal.style.display = 'block'
+}
 
 async function main() {
     db = new DB
@@ -379,6 +390,10 @@ async function main() {
         for (const message of messages) {
             addMessageToUi(await currentConversation.addMessage(db, message), message)
         }
+    })
+
+    document.getElementById('error-close-button')?.addEventListener('click', function () {
+        errorModal.style.display = 'none'
     })
 }
 
