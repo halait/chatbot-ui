@@ -189,39 +189,39 @@ export function render(markdown: string): Node[] {
     return nodes
 }
 
-export function htmlToMarkdown(nodes: NodeListOf<ChildNode>): string {
-    const markdown: string[] = []
-    for(const child of nodes) {
-        if(child.nodeName === '#text') {
-            markdown.push(child.textContent ?? '')
-        } else if(child.nodeName === 'P') {
-            markdown.push(htmlToMarkdown(child.childNodes))
-            markdown.push('\n\n')
-        } else if(child.nodeName === 'H1' ||
-            child.nodeName === 'H2' ||
-            child.nodeName === 'H3' ||
-            child.nodeName === 'H4' ||
-            child.nodeName === 'H5' ||
-            child.nodeName === 'H6'
-        ) {
-            markdown.push('######'.slice(0, parseInt(child.nodeName[1])))
-            markdown.push(' ')
-            markdown.push(htmlToMarkdown(child.childNodes))
-            markdown.push('\n')
-        } else if(child.nodeName === 'EM') {
-            markdown.push('*')
-            markdown.push(htmlToMarkdown(child.childNodes))
-            markdown.push('*')
-        } else if(child.nodeName === 'STRONG') {
-            markdown.push('**')
-            markdown.push(htmlToMarkdown(child.childNodes))
-            markdown.push('**')
-        } else if(child.nodeName === 'BR') {
-            markdown.push('\n')
-        }
-    }
-    return markdown.join('')
-}
+// export function htmlToMarkdown(nodes: NodeListOf<ChildNode>): string {
+//     const markdown: string[] = []
+//     for(const child of nodes) {
+//         if(child.nodeName === '#text') {
+//             markdown.push(child.textContent ?? '')
+//         } else if(child.nodeName === 'P') {
+//             markdown.push(htmlToMarkdown(child.childNodes))
+//             markdown.push('\n\n')
+//         } else if(child.nodeName === 'H1' ||
+//             child.nodeName === 'H2' ||
+//             child.nodeName === 'H3' ||
+//             child.nodeName === 'H4' ||
+//             child.nodeName === 'H5' ||
+//             child.nodeName === 'H6'
+//         ) {
+//             markdown.push('######'.slice(0, parseInt(child.nodeName[1])))
+//             markdown.push(' ')
+//             markdown.push(htmlToMarkdown(child.childNodes))
+//             markdown.push('\n')
+//         } else if(child.nodeName === 'EM') {
+//             markdown.push('*')
+//             markdown.push(htmlToMarkdown(child.childNodes))
+//             markdown.push('*')
+//         } else if(child.nodeName === 'STRONG') {
+//             markdown.push('**')
+//             markdown.push(htmlToMarkdown(child.childNodes))
+//             markdown.push('**')
+//         } else if(child.nodeName === 'BR') {
+//             markdown.push('\n')
+//         }
+//     }
+//     return markdown.join('')
+// }
 
 type TokenType = 'text' | 'asterisks' | 'numberSigns' | 'newLine' | 'newLines'
 

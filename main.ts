@@ -1,5 +1,6 @@
 import { DB, ConversationMessage } from './db.js'
-import { render, htmlToMarkdown } from './markdown_renderer.js'
+import { render/*, htmlToMarkdown*/ } from './markdown_renderer.js'
+import { DoubleLinkedList, DoubleLinkedListNode } from './double_linked_list.js'
 
 let endpoint = localStorage.getItem('endpoint') ?? 'https://api.openai.com/v1/chat/completions'
 let apiKey = localStorage.getItem('apiKey') ?? ''
@@ -121,12 +122,22 @@ async function submitForm() {
         const message: string[] = []
         let start = Date.now()
         let lastUpdate = 0
+
+        let remainder: null | string = null
         for await (const chunk of response.body) {
-            const lines = utf8decoder.decode(chunk).split('\n')
+            const lines = utf8decoder.decode(chunk).split('\n\n')
+            if (remainder) {
+                lines[0] = remainder + lines[0]
+                remainder = null
+            }
+            if (chunk[chunk.length - 1] !== 10 && chunk[chunk.length - 2] !== 10) {
+                remainder = lines.pop() ?? null
+            }
             for (let line of lines) {
                 if (line === '') {
-                    continue;
+                    continue
                 }
+
                 if (line.slice(0, 6) !== 'data: ') {
                     throw new Error('Unexpected stream data')
                 }
@@ -168,7 +179,11 @@ function addMessageToUi(messageId: number, message: Message): HTMLDivElement {
     div.addEventListener('focusin', function (e) {
         const element = e.currentTarget as HTMLElement
         element.setAttribute('spellcheck', 'true')
-        element.replaceChildren(document.createTextNode(htmlToMarkdown(element.childNodes)))
+        const node = currentConversation.getMessage(parseInt(element.dataset.id!))
+        if(!node) {
+            throw new Error('Message not found')
+        }
+        element.replaceChildren(document.createTextNode(node.data.message.content))
     })
     div.addEventListener('focusout', function (e) {
         const element = e.currentTarget as HTMLElement
@@ -305,7 +320,6 @@ async function main() {
 
     document.getElementById('input-set-button')?.addEventListener('click', async function () {
         const content = input.innerText.trim()
-        console.log('content: ' + content)
         if (!content) {
             console.warn('Empty input, ignoring')
         }
@@ -384,7 +398,6 @@ async function main() {
             return
         }
         const messages = JSON.parse(await file.text())
-        console.log(messages)
         currentConversation.clear()
         chatDiv.replaceChildren()
         for (const message of messages) {
@@ -398,111 +411,6 @@ async function main() {
 }
 
 main()
-
-class DoubleLinkedListNode<T> {
-    data!: T
-    prev: DoubleLinkedListNode<T> | null = null
-    next: DoubleLinkedListNode<T> | null = null
-
-    constructor(data: T) {
-        this.data = data
-    }
-}
-
-class DoubleLinkedList<T> {
-    head: DoubleLinkedListNode<T> | null = null
-    tail: DoubleLinkedListNode<T> | null = null
-    constructor() {
-    }
-
-    add(data: T): DoubleLinkedListNode<T> {
-        const node = new DoubleLinkedListNode<T>(data)
-        if (!this.head) {
-            this.head = node
-        }
-
-        if (this.tail) {
-            this.tail.next = node
-            node.prev = this.tail
-            this.tail = node
-        } else {
-            this.tail = node
-        }
-        return node
-    }
-
-    delete(node: DoubleLinkedListNode<T>) {
-        if (this.head === node) {
-            this.head = node.next
-        }
-        if (this.tail === node) {
-            this.tail = node.prev
-        }
-        if (node.prev) {
-            node.prev.next = node.next
-        }
-        if (node.next) {
-            node.next.prev = node.prev
-        }
-    }
-
-    clear() {
-        let node = this.head
-        while (node != null) {
-            this.delete(node)
-            node = node.next
-        }
-    }
-
-    toArray() {
-        const result = []
-        let node = this.head
-        while (node != null) {
-            result.push(node.data)
-            node = node.next
-        }
-        return result
-    }
-
-    toNodeArray() {
-        const result = []
-        let node = this.head
-        while (node != null) {
-            result.push(node)
-            node = node.next
-        }
-        return result
-    }
-
-    map(fn: (param: T) => any): any[] {
-        const result = []
-        let node = this.head
-        while (node != null) {
-            result.push(fn(node.data))
-            node = node.next
-        }
-        return result
-    }
-
-    find(fn: (param: T) => any): DoubleLinkedListNode<T> | null {
-        let node = this.head
-        while (node != null) {
-            if (fn(node.data)) {
-                return node
-            }
-            node = node.next
-        }
-        return null
-    }
-
-    forEach(fn: (param: T) => any) {
-        let node = this.head
-        while (node != null) {
-            fn(node.data)
-            node = node.next
-        }
-    }
-}
 
 class ConversationMessageList extends DoubleLinkedList<ConversationMessageData> {
     constructor() {
@@ -545,8 +453,12 @@ class ConversationMessageList extends DoubleLinkedList<ConversationMessageData> 
         return id
     }
 
+    getMessage(messageKey: number) {
+        return this.find(function (data) {return data.id === messageKey})
+    }
+
     async deleteMessage(db: DB, messageKey: number) {
-        const node = this.find(function (data) { if (data.id == messageKey) { return true } })
+        const node = this.getMessage(messageKey)
 
         if (!node) {
             throw new Error('Message not found')
@@ -583,7 +495,7 @@ class ConversationMessageList extends DoubleLinkedList<ConversationMessageData> 
     }
 
     async updateMessage(db: DB, message: Message, messageKey: number) {
-        const node = this.find(function (data) { if (data.id == messageKey) { return true } })
+        const node = this.getMessage(messageKey)
         if (!node) {
             throw new Error('Message not found')
         }

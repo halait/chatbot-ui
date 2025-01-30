@@ -6,4 +6,5 @@ conversation.json
 init_prompts.json
 keys.txt
 scratch.ts
-scratch.js
+
+public/*.js
