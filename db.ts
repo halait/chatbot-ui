@@ -45,7 +45,7 @@ export class DB {
     }
 
     getObject(store: string, key: any): Promise<any> {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             if (!this.db) {
                 throw new Error('Not initialized')
             }
@@ -64,7 +64,7 @@ export class DB {
             request.onsuccess = function (e) {
                 const data = (e.target as IDBRequest).result
                 if (!data) {
-                    throw new Error('Object does not exist, unable to get object.')
+                    reject(new Error('Object does not exist, unable to get object.'))
                 }
                 resolve(data)
             }
@@ -92,7 +92,11 @@ export class DB {
                 if (!data) {
                     throw new Error('Object does not exist, unable to update object.')
                 }
-                const requestUpdate = objectStore.put(object, key)
+                
+                for (const prop in object) {
+                    data[prop] = object[prop]
+                }
+                const requestUpdate = objectStore.put(data, key)
 
                 requestUpdate.onerror = function () {
                     throw new Error('Put error, unable to update object.')

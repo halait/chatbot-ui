@@ -2,11 +2,13 @@ import { DB, ConversationMessage } from './db.js'
 import { render/*, htmlToMarkdown*/ } from './markdown_renderer.js'
 import { DoubleLinkedList, DoubleLinkedListNode } from './double_linked_list.js'
 
-let endpoint = localStorage.getItem('endpoint') ?? 'https://api.openai.com/v1/chat/completions'
-let apiKey = localStorage.getItem('apiKey') ?? ''
-
-let apiParams: { [key: string]: any } = localStorage.getItem('apiParams') ? JSON.parse(localStorage.getItem('apiParams')!) as { [key: string]: any } : {
-    'model': 'gpt-4o-mini'
+let apiParams: ApiParams = localStorage.getItem('apiParams') ? JSON.parse(localStorage.getItem('apiParams')!) : {
+    endpoint: 'https://api.openai.com/v1/chat/completions',
+    key: '',
+    params: {
+        model: 'gpt-4o-mini',
+        stream: true
+    }
 }
 
 const chatDiv = document.getElementById('chat') as HTMLElement
@@ -18,19 +20,19 @@ const historyContainer = document.getElementById('history-container') as HTMLEle
 const configModal = document.getElementById('config-modal') as HTMLElement
 const errorModal = document.getElementById('error-modal') as HTMLElement
 
-const apiMap: { [key: string]: ApiConfiguration } = {
+const apiMap: { [key: string]: ApiInformation } = {
     'openai.com': {
         developerRole: 'developer',
-        stream: true,
-        store: false
+        store: false,
+        titleModel: 'gpt-4o-mini',
     },
     'deepseek.com': {
         developerRole: 'system',
-        stream: true
+        titleModel: 'deepseek-chat',
     },
     'mistral.ai': {
         developerRole: 'system',
-        stream: true
+        titleModel: 'mistral-small-latest'
     }
 }
 
@@ -54,13 +56,13 @@ async function submitForm() {
         addMessageToUi(messageId, message)
     }
 
-    const domains = (new URL(endpoint)).hostname.split('.')
+    const domains = (new URL(apiParams.endpoint)).hostname.split('.')
     if (!domains) {
         throw new Error('Invalid URL, hostname parse failed')
     }
     const domain = domains.slice(Math.max(0, domains.length - 2)).join('.')
 
-    const api = apiMap[domain] ?? 'openai.com'
+    const api = apiMap[domain] ?? apiMap['deepseek.com']
     const messages = currentConversation.map(function (conversationMessage) {
         return {
             role: conversationMessage.message.role === 'developer' ? api.developerRole : conversationMessage.message.role,
@@ -68,32 +70,25 @@ async function submitForm() {
         }
     })
 
-    if (!apiKey) {
-        throw new Error('API Key missing')
-    }
-
     const body = {
         messages: messages
     } as any
 
-    for (const key of Object.keys(apiParams)) {
-        if (apiParams[key]) {
-            body[key] = apiParams[key]
+    for (const key of Object.keys(apiParams.params)) {
+        if (apiParams.params[key]) {
+            body[key] = apiParams.params[key]
         }
-    }
-    if (api.stream) {
-        body['stream'] = api.stream
     }
 
     if (api.store !== undefined) {
         body['store'] = api.store
     }
 
-    const response = await fetch(endpoint, {
+    const response = await fetch(apiParams.endpoint, {
         method: 'post',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
+            'Authorization': `Bearer ${apiParams.key}`
         },
         body: JSON.stringify(body)
     })
@@ -102,8 +97,8 @@ async function submitForm() {
         showError(await response.text())
         return
     }
-    
-    if (!api.stream) {
+
+    if (!apiParams.params['stream']) {
         const output = (await response.json()).choices[0].message.content
         const assistantMessage = { role: 'assistant', content: output }
 
@@ -135,6 +130,10 @@ async function submitForm() {
             }
             for (let line of lines) {
                 if (line === '') {
+                    continue
+                }
+
+                if (line.trim() === ': keep-alive') {
                     continue
                 }
 
@@ -180,7 +179,7 @@ function addMessageToUi(messageId: number, message: Message): HTMLDivElement {
         const element = e.currentTarget as HTMLElement
         element.setAttribute('spellcheck', 'true')
         const node = currentConversation.getMessage(parseInt(element.dataset.id!))
-        if(!node) {
+        if (!node) {
             throw new Error('Message not found')
         }
         element.replaceChildren(document.createTextNode(node.data.message.content))
@@ -248,6 +247,7 @@ async function deleteConversation(conversationKey: number) {
     if (currentConversation.head?.data.conversationKey === conversationKey) {
         currentConversation.clear()
         chatDiv.replaceChildren()
+        router.goTo('/')
     }
     await db.deleteAllIndexKey('conversationsMessages', 'conversationKey', conversationKey)
     await db.deleteObject('conversations', conversationKey)
@@ -255,7 +255,6 @@ async function deleteConversation(conversationKey: number) {
 
 window.addEventListener("error", function (e) {
     alert("Error occurred: " + e.error.message);
-    return false;
 })
 
 window.addEventListener('unhandledrejection', function (e) {
@@ -265,7 +264,7 @@ window.addEventListener('unhandledrejection', function (e) {
 function showError(message: string) {
     const errorText = document.getElementById('error-message') as HTMLElement
     errorText.textContent = message
-    errorModal.style.display = 'block'
+    toggleModal(errorModal)
 }
 
 async function main() {
@@ -278,9 +277,8 @@ async function main() {
     })
 
     document.getElementById('history-button')!.addEventListener('click', async function () {
-        const showModal = historyModal.style.display !== 'flex'
-        if (!showModal) {
-            historyModal.style.display = 'none';
+        if (currentModal === historyModal) {
+            toggleModal(historyModal);
             return
         }
         historyContainer.replaceChildren()
@@ -289,9 +287,11 @@ async function main() {
             const container = document.createElement('div')
             container.className = 'history-item-container'
             container.dataset.id = key.toString()
-            const div = document.createElement('div')
-            div.className = 'history-item'
-            div.textContent = `${new Date(conversation.timestamp).toLocaleString()} | ${conversation.title}`
+            const a = document.createElement('a')
+            a.href = `/conversation/${key}`
+            a.className = 'history-item undecorated-a'
+            a.title = conversation.title
+            a.textContent = `${new Date(conversation.timestamp).toLocaleString()} | ${conversation.title.length > 50 ? conversation.title.slice(0, 50) + "..." : conversation.title}`
             const button = document.createElement('button')
             button.textContent = 'Delete'
             // button.className = 'history-delete-button'
@@ -301,21 +301,20 @@ async function main() {
                 await deleteConversation(id)
                 parent.remove()
             })
-            div.addEventListener('click', async function (e) {
+            a.addEventListener('click', async function (e) {
+                e.preventDefault()
                 const id = parseInt((e.currentTarget as HTMLElement).parentElement!.dataset.id as string)
-                await setConversation(id, conversations.get(key)!)
-                historyModal.style.display = 'none'
+                router.goTo(`/conversation/${id}`)
             })
-            container.appendChild(div)
+            container.appendChild(a)
             container.appendChild(button)
             historyContainer.appendChild(container)
         }
-        historyModal.style.display = 'flex';
+        toggleModal(historyModal, 'flex')
     })
 
     document.getElementById('new-chat-button')?.addEventListener('click', function () {
-        currentConversation.clear()
-        chatDiv.replaceChildren()
+        router.goTo('/')
     })
 
     document.getElementById('input-set-button')?.addEventListener('click', async function () {
@@ -336,46 +335,97 @@ async function main() {
         }
     })
 
-    document.getElementById('set-config-button')?.addEventListener('click', function () {
-        const showModal = configModal.style.display !== 'block'
-        if (!showModal) {
-            configModal.style.display = 'none';
-            return
+    function setConfigForm(apiParamsSet: ApiParams = apiParams, presets: { [key: string]: ApiParams } = localStorage.getItem('presets') ? JSON.parse(localStorage.getItem('presets')!) : {}, presetName: string = '') {
+        (document.getElementById('set-endpoint-input') as HTMLInputElement).value = apiParamsSet.endpoint;
+        (document.getElementById('set-key-input') as HTMLInputElement).value = apiParamsSet.key
+
+        const apiParamInputs = document.querySelectorAll('#config-form > [data-api-param]') as NodeListOf<HTMLInputElement>
+        for (const input of apiParamInputs) {
+            if (input.type === 'checkbox') {
+                input.checked = apiParamsSet.params[input.getAttribute('data-api-param')!] ?? false
+                continue
+            }
+            input.value = apiParamsSet.params[input.getAttribute('data-api-param')!] ?? ''
         }
-        const keyInput = document.getElementById('set-key-input') as HTMLInputElement
-        keyInput.value = apiKey
-        const endpointInput = document.getElementById('set-endpoint-input') as HTMLInputElement
-        endpointInput.value = endpoint
+
+        const presetSelect = document.getElementById('preset-select')
+        let firstOption = document.createElement('option')
+        firstOption.value = ''
+        const nodes = [firstOption]
+        for (const name in presets) {
+            const option = document.createElement('option')
+            option.value = name
+            option.textContent = name
+            nodes.push(option)
+        }
+        presetSelect?.replaceChildren(...nodes);
+
+        (document.getElementById('preset-name') as HTMLInputElement).value = presetName
+    }
+
+    document.getElementById('set-config-button')?.addEventListener('click', function () {
+        if (currentModal !== configModal) {
+            setConfigForm()
+        }
+        toggleModal(configModal)
+    })
+
+    function getApiParams(): ApiParams {
+        const key = (document.getElementById('set-key-input') as HTMLInputElement).value
+        const endpoint = (document.getElementById('set-endpoint-input') as HTMLInputElement).value
 
         const apiParamInputs = document.querySelectorAll('#config-form > [data-api-param]') as NodeListOf<HTMLInputElement>
 
+        const params: { [key: string]: any } = {}
         for (const input of apiParamInputs) {
-            input.value = apiParams[input.getAttribute('data-api-param')!] ?? ''
+            const param = input.getAttribute('data-api-param')!
+            if (input.type === 'checkbox') {
+                params[param] = input.checked
+                continue
+            }
+            params[param] = input.value && input.type === 'number' ? parseFloat(input.value) : input.value
         }
-
-        configModal.style.display = 'block'
-    })
+        return { key, endpoint, params }
+    }
 
     document.getElementById('config-form')?.addEventListener('submit', function (e) {
         e.preventDefault()
-        const keyInput = document.getElementById('set-key-input') as HTMLInputElement
-        apiKey = keyInput.value
-        localStorage.setItem('apiKey', apiKey)
-        const endpointInput = document.getElementById('set-endpoint-input') as HTMLInputElement
-        endpoint = endpointInput.value
-        localStorage.setItem('endpoint', endpoint)
-
-        const apiParamInputs = document.querySelectorAll('#config-form > [data-api-param]') as NodeListOf<HTMLInputElement>
-
-        for (const input of apiParamInputs) {
-            const param = input.getAttribute('data-api-param')!
-            apiParams[param] = input.value && input.type === 'number' ? parseFloat(input.value) : input.value
-        }
-
+        apiParams = getApiParams()
         localStorage.setItem('apiParams', JSON.stringify(apiParams))
 
-        configModal.style.display = 'none'
+        toggleModal(configModal)
     })
+
+    document.getElementById('set-preset')?.addEventListener('click', function () {
+        const name = (document.getElementById('preset-name') as HTMLInputElement).value
+        if (!name) {
+            showError('Enter preset name to set')
+        }
+        const apiParams = getApiParams()
+        const presets: { [key: string]: ApiParams } = localStorage.getItem('presets') ? JSON.parse(localStorage.getItem('presets')!) : {}
+        presets[name] = apiParams
+        localStorage.setItem('presets', JSON.stringify(presets))
+        setConfigForm(apiParams, presets, name)
+    })
+
+    document.getElementById('preset-select')?.addEventListener('change', function (e) {
+        const name = (e.currentTarget as HTMLSelectElement).value
+        const presets: { [key: string]: ApiParams } = localStorage.getItem('presets') ? JSON.parse(localStorage.getItem('presets')!) : []
+        apiParams = presets[name]
+        setConfigForm(apiParams, presets, name)
+    })
+
+    document.getElementById('delete-preset')?.addEventListener('click', function () {
+        const name = (document.getElementById('preset-name') as HTMLInputElement).value
+        if (!name) {
+            showError('Enter preset name to delete')
+        }
+        const presets: { [key: string]: ApiParams } = localStorage.getItem('presets') ? JSON.parse(localStorage.getItem('presets')!) : {}
+        delete presets[name]
+        localStorage.setItem('presets', JSON.stringify(presets))
+        setConfigForm(apiParams, presets)
+    })
+
 
     document.getElementById('export-button')?.addEventListener('click', function () {
         const json = JSON.stringify(currentConversation.map(function (conversationMessage) { return conversationMessage.message }))
@@ -408,6 +458,37 @@ async function main() {
     document.getElementById('error-close-button')?.addEventListener('click', function () {
         errorModal.style.display = 'none'
     })
+
+    window.addEventListener('popstate', async function (e) {
+        const state = e.state as { id: number, conversation: Conversation }
+        if (!state || !state.id || !state.conversation) {
+            return
+        }
+        await setConversation(state.id, state.conversation)
+    })
+
+    if (location.pathname !== '/') {
+        const pathParts = location.pathname.split('/')
+        if (pathParts[1] === 'conversation') {
+            const conversationId = parseInt(pathParts[2])
+            if (!isNaN(conversationId)) {
+                try {
+                    const conversation = await db.getObject('conversations', conversationId) as Conversation
+                    history.replaceState({ id: conversationId, conversation }, '', `/conversation/${conversationId}`)
+                    await setConversation(conversationId, conversation)
+                } catch (e) {
+                    console.log('Conversation not found:', e)
+                    console.error(e)
+                    showError('Conversation not found, start new chat or select from history')
+                }
+            }
+        }
+    }
+
+    document.getElementById('app-heading-a')!.addEventListener('click', function (e) {
+        e.preventDefault()
+        router.goTo('/')
+    })
 }
 
 main()
@@ -420,11 +501,46 @@ class ConversationMessageList extends DoubleLinkedList<ConversationMessageData> 
     async addMessage(db: DB, message: Message): Promise<number> {
         let conversationKey: number
         let conversationStart: number | null = null
+
         if (!this.head) {
             conversationStart = Date.now()
+            const title = message.content.split('\n')[0].slice(0, 50) || 'New Conversation'
             conversationKey = await db.addObject('conversations', {
-                title: message.content.slice(0, 10),
+                title,
                 timestamp: conversationStart
+            })
+            const api = apiMap[(new URL(apiParams.endpoint)).hostname.split('.').slice(-2).join('.')]
+            fetch(apiParams.endpoint, {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiParams.key}`,
+                },
+                body: JSON.stringify({
+                    messages: [{
+                        role: api?.developerRole ?? 'system',
+                        content: 'Output topic of conversation based on next prompt in 10 words or less.'
+                    },
+                    {
+                        role: 'user',
+                        content: message.content
+                    }],
+                    model: api?.titleModel ?? apiParams.params.model
+                })
+            }).then(async function (response) {
+                if (!response.ok) {
+                    console.warn('Failed to get conversation title from API, using first message as title')
+                    return
+                }
+                const data = await response.json()
+                if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+                    console.warn('Failed to get conversation title from API, using first message as title')
+                    return
+                }
+                const title = data.choices[0].message.content.slice(0, 100) ?? 'New Conversation'
+                await db.updateObject('conversations', {
+                    title
+                }, conversationKey)
             })
         } else {
             conversationKey = this.head.data.conversationKey
@@ -440,10 +556,9 @@ class ConversationMessageList extends DoubleLinkedList<ConversationMessageData> 
 
         if (conversationStart) {
             await db.updateObject('conversations', {
-                title: message.content.slice(0, 10),
-                timestamp: conversationStart,
                 root: id
             }, conversationKey)
+            router.goTo(`/conversation/${conversationKey}`)
         }
 
         if (node.prev) {
@@ -454,7 +569,7 @@ class ConversationMessageList extends DoubleLinkedList<ConversationMessageData> 
     }
 
     getMessage(messageKey: number) {
-        return this.find(function (data) {return data.id === messageKey})
+        return this.find(function (data) { return data.id === messageKey })
     }
 
     async deleteMessage(db: DB, messageKey: number) {
@@ -479,8 +594,6 @@ class ConversationMessageList extends DoubleLinkedList<ConversationMessageData> 
         if (!node.prev && node.next) {
             const conversation = await db.getObject('conversations', node.data.conversationKey)
             await db.updateObject('conversations', {
-                title: conversation.title,
-                timestamp: conversation.timestamp,
                 root: node.next.data.id
             }, node.data.conversationKey)
         }
@@ -521,6 +634,44 @@ class ConversationMessageList extends DoubleLinkedList<ConversationMessageData> 
 
 let currentConversation = new ConversationMessageList()
 
+let currentModal: HTMLElement | null = null;
+
+function toggleModal(modal: HTMLElement, display?: string): boolean {
+    if (currentModal) {
+        currentModal.style.display = 'none';
+    }
+    if (modal === currentModal) {
+        currentModal = null;
+        return false;
+    }
+    currentModal = modal;
+    modal.style.display = display ?? 'block';
+    return true;
+}
+
+const router = {
+    async goTo(path: string): Promise<void> {
+        if (currentModal) {
+            toggleModal(currentModal)
+        }
+        history.pushState(null, '', path)
+        if (path === '/') {
+            currentConversation.clear()
+            chatDiv.replaceChildren()
+            return;
+        }
+        if (path.startsWith('/conversation/')) {
+            const id = parseInt(path.split('/')[2]);
+            if (isNaN(id)) {
+                throw new Error('Invalid conversation ID')
+            }
+            await setConversation(id, await db.getObject('conversations', id) as Conversation)
+        }
+    }
+};
+
+
+
 interface Message {
     role: string
     content: string
@@ -538,8 +689,14 @@ interface Conversation {
     root: number
 }
 
-interface ApiConfiguration {
+interface ApiInformation {
     developerRole: string,
-    stream?: boolean
-    store?: boolean
+    store?: boolean,
+    titleModel: string
+}
+
+interface ApiParams {
+    endpoint: string
+    key: string
+    params: { [key: string]: any }
 }

@@ -4,12 +4,12 @@
 <head>
     <title>Chatbot UI</title>
     <meta name=viewport content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="main.css" />
+    <link rel="stylesheet" href="/main.css" />
 </head>
 
 <body>
     <header id="app-header">
-        <h1 id="app-heading">Chatbot UI</h1>
+        <a id="app-heading-a" class="block-a undecorated-a" href="/"><h1 id="app-heading">Chatbot UI</h1></a>
         <div id="header-buttons-container">
             <button id="set-config-button">Config</button>
             <button id="history-button">History</button>
@@ -40,7 +40,7 @@
         <h2>Configuration</h2>
         <form id="config-form">
             <label for="set-endpoint-input">Endpoint</label>
-            <input id="set-endpoint-input" type="url">
+            <input id="set-endpoint-input" type="url" required>
             <label for="set-key-input">Key</label>
             <input id="set-key-input" type="password">
 
@@ -58,7 +58,17 @@
 
             <label for="set-top-p-input">Top P</label>
             <input id="set-top-p-input" type="number" step="any" data-api-param="top_p">
+            
+            <label for="stream">Stream</label>
+            <input id="stream" type="checkbox" data-api-param="stream">
 
+            <label for="preset-select">Preset</label>
+            <select id="preset-select"></select>
+            <label for="preset-name">Preset Name</label>
+            <input id="preset-name" type="text">
+            <button id="set-preset" type="button">Set Preset</button>
+            <button id="delete-preset" type="button">Delete Preset</button>
+            
             <input type="submit" value="Submit">
         </form>
     </div>
@@ -67,7 +77,7 @@
         <p id="error-message"></p>
         <button id="error-close-button">Close</button>
     </div>
-    <script src="main.js" type="module"></script>
+    <script src="/main.js" type="module"></script>
 </body>
 
 </html>
