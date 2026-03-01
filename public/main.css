@@ -179,6 +179,13 @@ input[type="url"], input[type="text"], input[type="email"], input[type="password
     margin: 0;
 }
 
+.schema-form-container {
+    padding: 0.5rem;
+}
+
+#params-form {
+    display: none;
+}
 @media (min-width: 34rem) {
     #app-header {
         display: flex;

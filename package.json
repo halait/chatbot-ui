@@ -1,6 +1,12 @@
 {
   "devDependencies": {
-    "@types/node": "^22.10.4"
+    "@types/node": "^22.10.4",
+    "ts-loader": "^9.5.4",
+    "webpack": "^5.104.1",
+    "webpack-cli": "^6.0.1"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "firebase": "^12.7.0"
+  }
 }

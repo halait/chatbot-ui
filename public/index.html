@@ -2,82 +2,125 @@
 <html lang="en">
 
 <head>
-    <title>Chatbot UI</title>
-    <meta name=viewport content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="/main.css" />
+  <title>chatbot UI</title>
+  <meta name=viewport content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/main.css" />
 </head>
 
 <body>
-    <header id="app-header">
-        <a id="app-heading-a" class="block-a undecorated-a" href="/"><h1 id="app-heading">Chatbot UI</h1></a>
-        <div id="header-buttons-container">
-            <button id="set-config-button">Config</button>
-            <button id="history-button">History</button>
-            <button id="new-chat-button">New Chat</button>
-            <button id="export-button">Export</button>
-            <button id="import-button">Import</button>
-            <input type="file" id="import-input" accept=".json" />
-        </div>
-    </header>
-    <div id="chat"></div>
-    <form id="form">
-        <select id="role-select">
-            <option value="developer">Developer</option>
-            <option value="user">User</option>
-            <option value="assistant">Assistant</option>
-        </select>
-        <div id="form-bar">
-            <div id="chat-input" rows="4" autocomplete="off" contenteditable="true"></div>
-            <button id="input-set-button" type="button">Set</button>
-            <input id="submit" type="submit" value="Send">
-        </div>
+  <header id="app-header">
+    <a id="app-heading-a" class="block-a undecorated-a" href="/">
+      <h1 id="app-heading">chatbot ui</h1>
+    </a>
+    <div id="header-buttons-container">
+      <button id="login-button">login</button>
+      <button id="set-config-button">config</button>
+      <button id="history-button">history</button>
+      <button id="new-chat-button">new</button>
+      <button id="export-button">export</button>
+      <button id="import-button">import</button>
+      <input type="file" id="import-input" accept=".json" />
+    </div>
+  </header>
+  <div id="chat"></div>
+  <form id="form">
+    <select id="role-select">
+      <option value="developer">developer</option>
+      <option value="user">user</option>
+      <option value="assistant">assistant</option>
+    </select>
+    <div id="form-bar">
+      <div id="chat-input" rows="4" autocomplete="off" contenteditable="true"></div>
+      <button id="input-set-button" type="button">set</button>
+      <input id="submit" type="submit" value="send">
+    </div>
+  </form>
+  <div id="history-modal" class="modal">
+    <h2>History</h2>
+    <div id="history-container"></div>
+  </div>
+  <div id="config-modal" class="modal">
+    <h2>configuration</h2>
+    <form id="endpoint-form">
+      <label for="set-endpoint-input">api</label>
+      <select id="set-endpoint-input">
+        <option value="">select api</option>
+      </select>
     </form>
-    <div id="history-modal" class="modal">
-        <h2>History</h2>
-        <div id="history-container"></div>
+    <form id="params-form">
+      <div id="params-container">
+
+      </div>
+      <input type="submit" value="submit">
+    </form>
+    <!-- <label for="set-key-input">Key</label>
+      <input id="set-key-input" type="password">
+
+      <label for="set-model-input">Model</label>
+      <input id="set-model-input" type="text" data-api-param="model">
+
+      <label for="set-temperture-input">Temperture</label>
+      <input id="set-temperture-input" type="number" step="any" data-api-param="temperture">
+
+      <label for="set-frequency-penalty-input">Frequency Penalty</label>
+      <input id="set-frequency-penalty-input" type="number" step="any" data-api-param="frequency_penalty">
+
+      <label for="set-presence-penalty-input">Presence Penalty</label>
+      <input id="set-presence-penalty-input" type="number" step="any" data-api-param="presence_penalty">
+
+      <label for="set-top-p-input">Top P</label>
+      <input id="set-top-p-input" type="number" step="any" data-api-param="top_p">
+
+      <label for="stream">Stream</label>
+      <input id="stream" type="checkbox" data-api-param="stream"> -->
+    <form id='preset-form'>
+      <label for="preset-select">preset</label>
+      <select id="preset-select"></select>
+      <label for="preset-name">preset name</label>
+      <input id="preset-name" type="text">
+      <button id="set-preset" type="button">set preset</button>
+      <button id="delete-preset" type="button">delete preset</button>
+    </form>
+  </div>
+  <div id="error-modal" class="modal">
+    <h2>Error</h2>
+    <p id="error-message"></p>
+    <button id="error-close-button">close</button>
+  </div>
+  <template id="login-template">
+    <div id="login-modal" class="modal">
+      <h2>login</h2>
+      <form id="login-form">
+        <label for="email-input">email</label>
+        <input id="email-input" type="email" required autocomplete="username">
+        <label for="password-input">password</label>
+        <input id="password-input" type="password" required autocomplete="current-password">
+        <input type="submit" value="Login">
+      </form>
+      <button id="register-button" type="button">register</button>
     </div>
-    <div id="config-modal" class="modal">
-        <h2>Configuration</h2>
-        <form id="config-form">
-            <label for="set-endpoint-input">Endpoint</label>
-            <input id="set-endpoint-input" type="url" required>
-            <label for="set-key-input">Key</label>
-            <input id="set-key-input" type="password">
-
-            <label for="set-model-input">Model</label>
-            <input id="set-model-input" type="text" data-api-param="model">
-
-            <label for="set-temperture-input">Temperture</label>
-            <input id="set-temperture-input" type="number" step="any" data-api-param="temperture">
-
-            <label for="set-frequency-penalty-input">Frequency Penalty</label>
-            <input id="set-frequency-penalty-input" type="number" step="any" data-api-param="frequency_penalty">
-
-            <label for="set-presence-penalty-input">Presence Penalty</label>
-            <input id="set-presence-penalty-input" type="number" step="any" data-api-param="presence_penalty">
-
-            <label for="set-top-p-input">Top P</label>
-            <input id="set-top-p-input" type="number" step="any" data-api-param="top_p">
-            
-            <label for="stream">Stream</label>
-            <input id="stream" type="checkbox" data-api-param="stream">
-
-            <label for="preset-select">Preset</label>
-            <select id="preset-select"></select>
-            <label for="preset-name">Preset Name</label>
-            <input id="preset-name" type="text">
-            <button id="set-preset" type="button">Set Preset</button>
-            <button id="delete-preset" type="button">Delete Preset</button>
-            
-            <input type="submit" value="Submit">
-        </form>
+  </template>
+  <template id="register-template">
+    <div id="register-modal" class="modal">
+      <h2>Login</h2>
+      <form id="register-form">
+        <label for="email-input">Email</label>
+        <input id="email-input" type="email" required autocomplete="username">
+        <label for="password-input">Password</label>
+        <input id="password-input" type="password" required autocomplete="new-password">
+        <label for="confirm-password-input">Password</label>
+        <input id="confirm-password-input" type="password" required autocomplete="new-password">
+        <input type="submit" value="Register">
+      </form>
     </div>
-    <div id="error-modal" class="modal">
-        <h2>Error</h2>
-        <p id="error-message"></p>
-        <button id="error-close-button">Close</button>
+  </template>
+  <template id="logout-template">
+    <div id="logout-modal" class="modal">
+      <h2>Logout</h2>
+      <button id="logout-button" type="button">Logout</button>
     </div>
-    <script src="/main.js" type="module"></script>
+  </template>
+  <script src="/bundle.js" type="module"></script>
 </body>
 
 </html>

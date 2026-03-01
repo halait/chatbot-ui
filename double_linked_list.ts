@@ -30,6 +30,19 @@ export class DoubleLinkedList<T> {
         return node
     }
 
+    addAfter(node: DoubleLinkedListNode<T>, data: T): DoubleLinkedListNode<T> {
+        const newNode = new DoubleLinkedListNode<T>(data)
+        newNode.prev = node
+        newNode.next = node.next
+        if (node.next) {
+            node.next.prev = newNode
+        } else {
+            this.tail = newNode
+        }
+        node.next = newNode
+        return newNode
+    }
+
     delete(node: DoubleLinkedListNode<T>) {
         if (this.head === node) {
             this.head = node.next
