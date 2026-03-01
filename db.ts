@@ -111,18 +111,18 @@ export class DB {
     })
   }
 
-  getAll(store: string): Promise<Map<number, any>> {
+  getAll(store: string, direction: 'prev' | 'next'): Promise<Map<number, any>> {
     return new Promise((resolve, reject) => {
       if (!this.db) {
         throw new Error('Not initialized')
       }
-      const transaction = this.db.transaction([store])
+      const transaction = this.db.transaction([store], 'readonly')
 
       transaction.onerror = (event) => {
         throw new Error('Transaction error, unable to get all objects.')
       }
 
-      const request = transaction.objectStore(store).openCursor()
+      const request = transaction.objectStore(store).openCursor(null, direction)
 
       request.onerror = function (e) {
         reject('Unable to get all from store.')

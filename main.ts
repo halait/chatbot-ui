@@ -4,9 +4,7 @@ import { DoubleLinkedList, DoubleLinkedListNode } from './double_linked_list.js'
 import { main as dbMain } from './firestore_db.js'
 import { currentModal, toggleModal } from './modal.js'
 import { main as authMain } from './auth.js'
-import { format } from 'path'
 import { createForm, getFormValues } from './schema_form.js'
-import { text } from 'stream/consumers'
 
 let apiParams: ApiParams = localStorage.getItem('apiParams') ? JSON.parse(localStorage.getItem('apiParams')!) : {
   api: 'openai.com',
@@ -34,7 +32,6 @@ let lastFocusedMessage: DoubleLinkedListNode<ConversationMessageData> | null = n
 const apiMap: { [key: string]: Api } = {
   'openai.com': {
     url: 'https://api.openai.com/v1/responses',
-    // developerRole: 'developer',
     defaultModel: 'gpt-5-mini',
     paramsSchema: {
       type: 'object',
@@ -63,7 +60,7 @@ const apiMap: { [key: string]: Api } = {
         prompt_cache_key: { type: 'string' }
       }
     },
-    fetcher: async function* (messages: Message[], params: any, signal: AbortSignal): AsyncIterable<string> {
+    fetcher: async function* (messages: Message[], params: any, signal?: AbortSignal): AsyncIterable<string> {
       const { key, ...regularParams } = params
       if (!key) {
         throw new Error('API key is required')
@@ -99,7 +96,7 @@ const apiMap: { [key: string]: Api } = {
       } else if (response.headers.get('Content-Type')?.includes('text/event-stream')) {
         if (!response.body) throw new Error('Response body is null for stream response')
         for await (const { event, data } of sseParser(response.body.getReader())) {
-          if(event === 'response.output_text.delta') {
+          if (event === 'response.output_text.delta') {
             yield JSON.parse(data).delta
           }
         }
@@ -110,7 +107,6 @@ const apiMap: { [key: string]: Api } = {
   },
   'deepseek.com': {
     url: 'https://api.deepseek.com/chat/completions',
-    // developerRole: 'system',
     defaultModel: 'deepseek-chat',
     paramsSchema: {
       type: 'object',
@@ -129,7 +125,7 @@ const apiMap: { [key: string]: Api } = {
         top_p: { type: 'number', min: 0, max: 1 }
       }
     },
-    fetcher: async function* (messages: Message[], params: any, signal: AbortSignal): AsyncIterable<string> {
+    fetcher: async function* (messages: Message[], params: any, signal?: AbortSignal): AsyncIterable<string> {
       const { key, ...regularParams } = params
       if (!key) {
         throw new Error('API key is required')
@@ -165,7 +161,7 @@ const apiMap: { [key: string]: Api } = {
       } else if (response.headers.get('Content-Type')?.includes('text/event-stream')) {
         if (!response.body) throw new Error('Response body is null for stream response')
         for await (const { event, data } of sseParser(response.body.getReader())) {
-          if(data) {
+          if (data) {
             yield JSON.parse(data).choices?.[0]?.delta?.content
           }
         }
@@ -176,22 +172,23 @@ const apiMap: { [key: string]: Api } = {
   },
   'mistral.ai': {
     url: 'https://api.mistral.ai/v1/chat/completions',
-    // developerRole: 'system',
     defaultModel: 'mistral-small-latest',
     paramsSchema: {
       type: 'object',
       properties: {
         key: { type: 'string', format: 'password' },
         model: { type: 'string' },
-        frequency_penalty: { type: 'number'},
+        frequency_penalty: { type: 'number' },
         max_tokens: { type: 'number' },
         n: { type: 'number' },
         presence_penalty: { type: 'number' },
         prompt_mode: { enum: ['reasoning'] },
         random_seed: { type: 'number' },
-        response_format: { type: 'object', properties: {
-          type: { enum: ['text', 'json_object'] }
-        } },
+        response_format: {
+          type: 'object', properties: {
+            type: { enum: ['text', 'json_object'] }
+          }
+        },
         safe_prompt: { type: 'boolean' },
         stop: { type: 'string' },
         stream: { type: 'boolean', default: true },
@@ -199,7 +196,7 @@ const apiMap: { [key: string]: Api } = {
         top_p: { type: 'number' }
       }
     },
-    fetcher: async function* (messages: Message[], params: any, signal: AbortSignal): AsyncIterable<string> {
+    fetcher: async function* (messages: Message[], params: any, signal?: AbortSignal): AsyncIterable<string> {
       const { key, ...regularParams } = params
       if (!key) {
         throw new Error('API key is required')
@@ -235,9 +232,9 @@ const apiMap: { [key: string]: Api } = {
       } else if (response.headers.get('Content-Type')?.includes('text/event-stream')) {
         if (!response.body) throw new Error('Response body is null for stream response')
         for await (const { event, data } of sseParser(response.body.getReader())) {
-          if(data) {
+          if (data) {
             const text = JSON.parse(data).choices?.[0]?.delta?.content
-            if(typeof text === 'string') {
+            if (typeof text === 'string') {
               yield text
             }
           }
@@ -249,14 +246,13 @@ const apiMap: { [key: string]: Api } = {
   },
   'x.ai': {
     url: 'https://api.x.ai/v1/chat/completions',
-    // developerRole: 'system',
     defaultModel: 'grok-4-1-fast-reasoning',
     paramsSchema: {
       type: 'object',
       properties: {
         'key': { type: 'string', format: 'password' },
         'model': { type: 'string' },
-        frequency_penalty: { type: 'number'},
+        frequency_penalty: { type: 'number' },
         max_completion_tokens: { type: 'number' },
         n: { type: 'number' },
         presence_penalty: { type: 'number' },
@@ -264,14 +260,16 @@ const apiMap: { [key: string]: Api } = {
         response_format: { enum: ['text', 'json_object'] },
         seed: { type: 'number' },
         stream: { type: 'boolean', default: true },
-        stream_options: { type: 'object', properties: {
-          include_usage: { type: 'boolean' }
-        }},
+        stream_options: {
+          type: 'object', properties: {
+            include_usage: { type: 'boolean' }
+          }
+        },
         temperature: { type: 'number', min: 0, max: 2 },
         top_p: { type: 'number', min: 0, max: 1 }
       }
     },
-    fetcher: async function* (messages: Message[], params: any, signal: AbortSignal): AsyncIterable<string> {
+    fetcher: async function* (messages: Message[], params: any, signal?: AbortSignal): AsyncIterable<string> {
       const { key, ...regularParams } = params
       if (!key) {
         throw new Error('API key is required')
@@ -307,7 +305,7 @@ const apiMap: { [key: string]: Api } = {
       } else if (response.headers.get('Content-Type')?.includes('text/event-stream')) {
         if (!response.body) throw new Error('Response body is null for stream response')
         for await (const { event, data } of sseParser(response.body.getReader())) {
-          if(data) {
+          if (data) {
             yield JSON.parse(data).choices?.[0]?.delta?.content
           }
         }
@@ -318,25 +316,19 @@ const apiMap: { [key: string]: Api } = {
   },
   'anthropic.com': {
     url: 'https://api.anthropic.com/v1/messages',
-    // headers: {
-    //   'anthropic-dangerous-direct-browser-access': 'true',
-    //   'anthropic-version': '2023-06-01'
-    // },
-    // developerRole: 'system',
     defaultModel: 'claude-haiku-4-5',
-    // authorizationAlias: 'x-api-key',
-    // authorizationPrefix: '',
-    // topLevelSystemPrompt: true,
     paramsSchema: {
       type: 'object',
       properties: {
         key: { type: 'string', format: 'password' },
         model: { type: 'string' },
         max_tokens: { type: 'number', default: 1024 },
-        cache_control: { type: 'object', properties: {
-          type: { enum: ['ephemeral'], default: 'ephemeral' },
-          ttl: { enum: ['5m', '1h'] }
-        }},
+        cache_control: {
+          type: 'object', properties: {
+            type: { enum: ['ephemeral'], default: 'ephemeral' },
+            ttl: { enum: ['5m', '1h'] }
+          }
+        },
         container: { type: 'string' },
         inference_geo: { type: 'string' },
         output_config: {
@@ -359,7 +351,7 @@ const apiMap: { [key: string]: Api } = {
         top_p: { type: 'number', min: 0, max: 1 }
       }
     },
-    fetcher: async function* (messages: Message[], params: any, signal: AbortSignal): AsyncIterable<string> {
+    fetcher: async function* (messages: Message[], params: any, signal?: AbortSignal): AsyncIterable<string> {
       const { key, ...regularParams } = params
       if (!key) {
         throw new Error('API key is required')
@@ -368,6 +360,7 @@ const apiMap: { [key: string]: Api } = {
       if (firstDeveloper) {
         messages = messages.slice(1)
       }
+
       messages = messages.map((message: any) => {
         if (message.role === 'developer') {
           return { role: 'system', content: message.content }
@@ -377,9 +370,9 @@ const apiMap: { [key: string]: Api } = {
 
       const body = {
         messages,
-        system: firstDeveloper,
         ...regularParams
       } as any
+      if (firstDeveloper) body['system'] = firstDeveloper
       const response = await fetch(this.url, {
         method: 'post',
         signal,
@@ -403,11 +396,11 @@ const apiMap: { [key: string]: Api } = {
       } else if (response.headers.get('Content-Type')?.includes('text/event-stream')) {
         if (!response.body) throw new Error('Response body is null for stream response')
         for await (const { event, data } of sseParser(response.body.getReader())) {
-          if(data) {
+          if (data) {
             let result = JSON.parse(data)
             if (result.type === 'content_block_delta') {
               yield result.delta?.text
-            } else if(result.type === 'message_stop') {
+            } else if (result.type === 'message_stop') {
               return
             }
           }
@@ -416,10 +409,79 @@ const apiMap: { [key: string]: Api } = {
         throw new Error('Unsupported response type: ' + response.headers.get('Content-Type'))
       }
     }
+  },
+  'google.com': {
+    url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:streamGenerateContent',
+    defaultModel: 'gemini-3.0-flash',
+    paramsSchema: {
+      type: 'object',
+      properties: {
+        key: { type: 'string', format: 'password' },
+        model: { type: 'string' },
+        temperature: { type: 'number', min: 0, max: 2 },
+        top_p: { type: 'number', min: 0, max: 1 },
+        top_k: { type: 'number' },
+        max_output_tokens: { type: 'number' },
+        system_instruction: { type: 'string' }
+      }
+    },
+    fetcher: async function* (messages: Message[], params: any, signal?: AbortSignal): AsyncIterable<string> {
+      const { key, model, ...generationConfig } = params;
+      if (!key) throw new Error('API key is required');
+
+      let systemInstruction = undefined;
+      const contentMessages = messages.filter(m => {
+        if (m.role === 'developer') {
+          systemInstruction = { parts: [{ text: m.content }] };
+          return false;
+        }
+        return true;
+      });
+
+      const contents = contentMessages.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      }));
+
+      const response = await fetch(this.url.replace('gemini-3.0-flash', model ?? this.defaultModel) + '?alt=sse', {
+        method: 'POST',
+        signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': key 
+        },
+        body: JSON.stringify({ 
+          contents, 
+          system_instruction: systemInstruction,
+          generationConfig 
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      if (!response.body) throw new Error('Response body is null');
+      
+      for await (const { data } of sseParser(response.body.getReader())) {
+        try {
+          console.log('Received SSE data:', data);
+          const json = JSON.parse(data);
+          console.log('Parsed JSON:', json);
+          const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            yield text;
+          }
+        } catch (e) {
+          // Gemini sometimes sends a "metadata" event at the end which might not parse the same
+        }
+      }
+    }
   }
 }
 
-export async function* sseParser(reader: ReadableStreamDefaultReader<Uint8Array<ArrayBuffer>>) {
+const lineBreakRegex = /\r\n|\r|\n/;
+async function* sseParser(reader: ReadableStreamDefaultReader<Uint8Array>) {
   const decoder = new TextDecoder();
   let buffer = "";
 
@@ -428,33 +490,43 @@ export async function* sseParser(reader: ReadableStreamDefaultReader<Uint8Array<
       const { done, value } = await reader.read();
       if (done) break;
 
-      // Append new data to the buffer
       buffer += decoder.decode(value, { stream: true });
 
-      // Look for the SSE double-newline delimiter
-      let boundaryIndex;
-      while ((boundaryIndex = buffer.indexOf("\n\n")) !== -1) {
-        // Extract exactly one full SSE message block
-        const block = buffer.slice(0, boundaryIndex);
-        // Remove that block (and the \n\n) from the buffer
-        buffer = buffer.slice(boundaryIndex + 2);
+      let lines = buffer.split(lineBreakRegex);
+      
+      buffer = lines.pop() || "";
 
-        // Process the block line-by-line without splitting the whole thing
-        let event = "message";
-        let data = "";
+      let currentEvent = "message";
+      let currentData = "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
         
-        const lines = block.split("\n"); // Minor allocation here, but limited to one block
-        for (const line of lines) {
-          if (line.startsWith("data:")) {
-            data += line.slice(5).trim();
-          } else if (line.startsWith("event:")) {
-            event = line.slice(6).trim();
+        if (trimmed === "") {
+          if (currentData) {
+            yield { event: currentEvent, data: currentData.trim() };
+            currentData = "";
+            currentEvent = "message";
           }
+          continue;
         }
 
-        if (data === "[DONE]") return;
-        if (data) yield { event, data };
+        if (line.startsWith(":")) continue;
+
+
+        if (line.startsWith("data:")) {
+          const data = line.slice(5);
+          if(data.trim() === "[DONE]") return
+          currentData += data; 
+        } else if (line.startsWith("event:")) {
+          currentEvent = line.slice(6).trim();
+        } else if (line.startsWith("id:")) {
+        }
       }
+    }
+    
+    if (buffer.startsWith("data:")) {
+        yield { event: "message", data: buffer.slice(5).trim() };
     }
   } finally {
     reader.releaseLock();
@@ -495,81 +567,17 @@ async function submitForm() {
   }
 
   const messages: Message[] = []
-  // currentConversation.forEach(function (conversationMessage) {
-  //   return {
-  //     role: conversationMessage.message.role === 'developer' ? api.developerRole : conversationMessage.message.role,
-  //     content: conversationMessage.message.content
-  //   }
-  // }
-  // let topLevelSystem = ''
   let currentNode = currentConversation.head
   while (currentNode != null) {
-    // if (api.topLevelSystemPrompt && currentNode.data.message.role === 'developer') {
-    // topLevelSystem = currentNode.data.message.content
-    // } else {
     messages.push({
       role: currentNode.data.message.role,
       content: currentNode.data.message.content
     })
-    // }
     if (currentNode === lastMessage) {
       break
     }
     currentNode = currentNode.next
   }
-
-  // const body = {
-  //   messages: messages
-  // } as any
-
-  // for (const key of Object.keys(apiParams.params)) {
-  //   if (apiParams.params[key]) {
-  //     body[key] = apiParams.params[key]
-  //   }
-  // }
-  // const body = {
-  //   messages,
-  //   ...apiParams.params
-  // }
-
-  // if (api.paramsSchema) {
-  //   for (const key of Object.keys(api.paramsSchema)) {
-  //     if (api.paramsSchema[key]) {
-  //       body[key] = api.paramsSchema[key]
-  //     }
-  //   }
-  // }
-
-  // if (topLevelSystem) {
-  //   body['system'] = topLevelSystem
-  // }
-
-  // if (api.store !== undefined) {
-  // body['store'] = api.store
-  // }
-  // const authorizationHeader = api.authorizationAlias ?? 'Authorization'
-  // let headers: any = {
-  //   'Content-Type': 'application/json'
-  // }
-
-  // headers[authorizationHeader] = `${api.authorizationPrefix ?? 'Bearer '}${apiParams.params.key}`
-
-  // if (api.headers) {
-  //   for (const key of Object.keys(api.headers)) {
-  //     headers[key] = api.headers[key]
-  //   }
-  // }
-
-  // const response = await fetch(api.url, {
-  //   method: 'post',
-  //   headers,
-  //   body: JSON.stringify(body)
-  // })
-
-  // if (!response.ok) {
-  //   showError(await response.text())
-  //   return
-  // }
 
   const controller = new AbortController();
   let response = api.fetcher(messages, apiParams.params, controller.signal)
@@ -598,87 +606,6 @@ async function submitForm() {
     chatDiv.scrollTop = chatDiv.scrollHeight
   }
   await currentConversation.updateMessage(db, assistantMessage, assistantMessageId)
-
-
-
-  // const isLast = lastMessage === currentConversation.tail
-  // if (typeof response === 'string') {
-  // let output;
-  // if (apiParams.api === 'anthropic.com') {
-  //   output = (await response.json()).content[0].text
-  // } else {
-  //   output = (await response.json()).choices[0].message.content
-  // }
-  // const assistantMessage: Message = { role: 'assistant', content: response }
-
-  // const assistantMessageId = await currentConversation.addMessage(db, assistantMessage, lastMessage)
-
-  // addMessageToUi(assistantMessageId, assistantMessage, lastMessage?.data.id)
-
-  // if (isLast) chatDiv.scrollTop = chatDiv.scrollHeight
-  // } else {
-
-
-
-  // if (response.body === null) {
-  //   throw new Error('response missing')
-  // }
-
-  // const utf8decoder = new TextDecoder();
-  // const assistantMessage: Message = { role: 'assistant', content: '' }
-  // const assistantMessageId = await currentConversation.addMessage(db, assistantMessage, lastMessage)
-  // const element = addMessageToUi(assistantMessageId, assistantMessage, lastMessage?.data.id)
-  // const message: string[] = []
-  // let start = Date.now()
-  // let lastUpdate = 0
-
-  // let remainder: null | string = null
-  // for await (const chunk of response.body) {
-  //   const lines = utf8decoder.decode(chunk).split('\n\n')
-  //   if (remainder) {
-  //     lines[0] = remainder + lines[0]
-  //     remainder = null
-  //   }
-  //   if (chunk[chunk.length - 1] !== 10 && chunk[chunk.length - 2] !== 10) {
-  //     remainder = lines.pop() ?? null
-  //   }
-  //   for (let line of lines) {
-  //     if (line === '') {
-  //       continue
-  //     }
-
-  //     if (line.trim() === ': keep-alive') {
-  //       continue
-  //     }
-
-  //     if (line.slice(0, 6) !== 'data: ') {
-  //       throw new Error('Unexpected stream data')
-  //     }
-  //     line = line.slice(6)
-  //     if (line === '[DONE]') {
-  //       assistantMessage.content = message.join('')
-  //       updateUiMessage(element, assistantMessage.content)
-  //       if (isLast && start > lastChatDivScroll) {
-  //         chatDiv.scrollTop = chatDiv.scrollHeight
-  //       }
-  //       await currentConversation.updateMessage(db, assistantMessage, assistantMessageId)
-  //       break
-  //     }
-  //     const content = JSON.parse(line).choices[0].delta.content
-  //     if (typeof content !== 'string') continue
-  //     message.push(content)
-  //     const now = Date.now()
-  //     if (now - lastUpdate > 200) {
-  //       updateUiMessage(element, message.join(''))
-  //       if (isLast && start > lastChatDivScroll) {
-  //         chatDiv.scrollTop = chatDiv.scrollHeight
-  //       }
-  //       lastUpdate = now
-  //     }
-
-  //   }
-  // }
-  // }
 }
 
 function addMessageToUi(messageId: number, message: Message, afterMessageId?: number): HTMLDivElement {
@@ -731,7 +658,6 @@ function addMessageToUi(messageId: number, message: Message, afterMessageId?: nu
     chatDiv.appendChild(div)
     chatDiv.scrollTop = chatDiv.scrollHeight
   }
-
   return div
 }
 
@@ -745,7 +671,7 @@ chatDiv.addEventListener('scroll', function () {
 
 function updateUiMessage(element: HTMLDivElement, content: string) {
   const nodes = render(content)
-  element.replaceChildren(...nodes)
+  element.replaceChildren(...nodes);
 }
 
 async function setConversation(conversationKey: number, conversation: Conversation) {
@@ -795,52 +721,6 @@ function showError(message: string) {
   toggleModal(errorModal)
 }
 
-// function setConfigForm(apiParamsSet: ApiParams = apiParams, presets: { [key: string]: ApiParams } = localStorage.getItem('presets') ? JSON.parse(localStorage.getItem('presets')!) : {}, presetName: string = '') {
-//   (document.getElementById('set-endpoint-input') as HTMLInputElement).value = apiParamsSet.endpoint;
-//   (document.getElementById('set-key-input') as HTMLInputElement).value = apiParamsSet.key
-
-//   const apiParamInputs = document.querySelectorAll('#config-form > [data-api-param]') as NodeListOf<HTMLInputElement>
-//   for (const input of apiParamInputs) {
-//     if (input.type === 'checkbox') {
-//       input.checked = apiParamsSet.params[input.getAttribute('data-api-param')!] ?? false
-//       continue
-//     }
-//     input.value = apiParamsSet.params[input.getAttribute('data-api-param')!] ?? ''
-//   }
-
-//   const presetSelect = document.getElementById('preset-select')
-//   let firstOption = document.createElement('option')
-//   firstOption.value = ''
-//   const nodes = [firstOption]
-//   for (const name in presets) {
-//     const option = document.createElement('option')
-//     option.value = name
-//     option.textContent = name
-//     nodes.push(option)
-//   }
-//   presetSelect?.replaceChildren(...nodes);
-
-//   (document.getElementById('preset-name') as HTMLInputElement).value = presetName
-// }
-
-// function getApiParams(): ApiParams {
-//   const key = (document.getElementById('set-key-input') as HTMLInputElement).value
-//   const endpoint = (document.getElementById('set-endpoint-input') as HTMLInputElement).value
-
-//   const apiParamInputs = document.querySelectorAll('#config-form > [data-api-param]') as NodeListOf<HTMLInputElement>
-
-//   const params: { [key: string]: any } = {}
-//   for (const input of apiParamInputs) {
-//     const param = input.getAttribute('data-api-param')!
-//     if (input.type === 'checkbox') {
-//       params[param] = input.checked
-//       continue
-//     }
-//     params[param] = input.value && input.type === 'number' ? parseFloat(input.value) : input.value
-//   }
-//   return { key, endpoint, params }
-// }
-
 function setPresets(presets: { [key: string]: ApiParams }) {
   localStorage.setItem('presets', JSON.stringify(presets))
   presetSelect.replaceChildren()
@@ -878,7 +758,7 @@ async function main() {
       return
     }
     historyContainer.replaceChildren()
-    const conversations = await db.getAll('conversations') as Map<number, Conversation>
+    const conversations = await db.getAll('conversations', 'prev') as Map<number, Conversation>
     for (const [key, conversation] of conversations) {
       const container = document.createElement('div')
       container.className = 'history-item-container'
@@ -932,23 +812,8 @@ async function main() {
   })
 
   document.getElementById('set-config-button')?.addEventListener('click', function () {
-    // if (currentModal !== configModal) {
-    // generateFormFromSchema(
-    //   apiParams,
-    //   paramsContainer
-    // )
-    // setConfigForm()
-    // }
     toggleModal(configModal)
   })
-
-  // document.getElementById('config-form')?.addEventListener('submit', function (e) {
-  //   e.preventDefault()
-  //   apiParams = getApiParams()
-  //   localStorage.setItem('apiParams', JSON.stringify(apiParams))
-
-  //   toggleModal(configModal)
-  // })
 
   document.getElementById('set-preset')?.addEventListener('click', function () {
     const name = (document.getElementById('preset-name') as HTMLInputElement).value
@@ -967,7 +832,7 @@ async function main() {
 
   presetSelect.addEventListener('change', function (e) {
     const name = (e.currentTarget as HTMLSelectElement).value
-    if(!name) {
+    if (!name) {
       return
     }
     const presets: { [key: string]: ApiParams } = localStorage.getItem('presets') ? JSON.parse(localStorage.getItem('presets')!) : []
@@ -1027,35 +892,12 @@ async function main() {
 
   window.addEventListener('popstate', async function (e) {
     const path = location.pathname
-    if (path === '/') {
-      currentConversation.clear()
-      chatDiv.replaceChildren()
-      return;
-    }
-    if (path.startsWith('/conversation/')) {
-      const id = parseInt(path.split('/')[2]);
-      if (isNaN(id)) {
-        throw new Error('Invalid conversation ID')
-      }
-      await setConversation(id, await db.getObject('conversations', id) as Conversation)
-    }
+    router.render(path)
   })
 
   if (location.pathname !== '/') {
-    const pathParts = location.pathname.split('/')
-    if (pathParts[1] === 'conversation') {
-      const conversationId = parseInt(pathParts[2])
-      if (!isNaN(conversationId)) {
-        try {
-          const conversation = await db.getObject('conversations', conversationId) as Conversation
-          await setConversation(conversationId, conversation)
-        } catch (e) {
-          console.log('Conversation not found:', e)
-          console.error(e)
-          showError('Conversation not found, start new chat or select from history')
-        }
-      }
-    }
+    const path = location.pathname
+    router.render(path)
   }
 
   document.getElementById('app-heading-a')!.addEventListener('click', function (e) {
@@ -1089,7 +931,6 @@ async function main() {
     e.preventDefault()
     const values = getFormValues(paramsContainer.querySelector('.schema-form-container') as HTMLElement)
     apiParams.params = values
-    console.log('Form values:', values)
     localStorage.setItem('apiParams', JSON.stringify(apiParams))
     toggleModal(configModal)
   })
@@ -1111,6 +952,16 @@ async function main() {
 
 main()
 
+async function fetchAsPromise(message: Message[], apiParams: ApiParams, signal?: AbortSignal): Promise<string> {
+  const api = apiMap[apiParams.api]
+  const response = api.fetcher(message, apiParams.params, signal)
+  let result = []
+  for await (const chunk of response) {
+    result.push(chunk)
+  }
+  return Promise.resolve(result.join(''))
+}
+
 class ConversationMessageList extends DoubleLinkedList<ConversationMessageData> {
   constructor() {
     super()
@@ -1127,39 +978,20 @@ class ConversationMessageList extends DoubleLinkedList<ConversationMessageData> 
         title,
         timestamp: conversationStart
       })
-      const api = apiMap[apiParams.api]
-      // fetch(api.url, {
-      //   method: 'post',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${apiParams.params.key}`,
-      //   },
-      //   body: JSON.stringify({
-      //     messages: [{
-      //       role: 'system',
-      //       content: 'Output topic of conversation based on next prompt in 10 words or less.'
-      //     },
-      //     {
-      //       role: 'user',
-      //       content: message.content
-      //     }],
-      //     model: api?.titleModel ?? apiParams.params.model
-      //   })
-      // }).then(async function (response) {
-      //   if (!response.ok) {
-      //     console.warn('Failed to get conversation title from API, using first message as title')
-      //     return
-      //   }
-      //   const data = await response.json()
-      //   if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
-      //     console.warn('Failed to get conversation title from API, using first message as title')
-      //     return
-      //   }
-      //   const title = data.choices[0].message.content.slice(0, 100) ?? 'New Conversation'
-      //   await db.updateObject('conversations', {
-      //     title
-      //   }, conversationKey)
-      // })
+      fetchAsPromise([
+        {
+          role: 'developer',
+          content: 'Output title for conversation based on next prompt in 10 words or less.'
+        },
+        {
+          role: 'user',
+          content: message.content
+        }
+      ], apiParams).then(async function (title) {
+        await db.updateObject('conversations', {
+          title
+        }, conversationKey)
+      })
     } else {
       conversationKey = this.head.data.conversationKey
     }
@@ -1178,7 +1010,7 @@ class ConversationMessageList extends DoubleLinkedList<ConversationMessageData> 
       await db.updateObject('conversations', {
         root: id
       }, conversationKey)
-      router.goTo(`/conversation/${conversationKey}`)
+      router.goTo(`/conversation/${conversationKey}`, false)
     }
 
     if (node.prev) {
@@ -1259,13 +1091,16 @@ class ConversationMessageList extends DoubleLinkedList<ConversationMessageData> 
 let currentConversation = new ConversationMessageList()
 
 
-
 const router = {
-  async goTo(path: string): Promise<void> {
+  async goTo(path: string, render: boolean = true) {
     if (currentModal) {
       toggleModal(currentModal)
     }
     history.pushState(null, '', path)
+    if(!render) return
+    this.render(path)
+  },
+  async render(path: string) {
     if (path === '/') {
       currentConversation.clear()
       chatDiv.replaceChildren()
@@ -1280,7 +1115,6 @@ const router = {
     }
   }
 };
-
 
 
 export interface Message {
@@ -1303,19 +1137,12 @@ interface Conversation {
 interface Api {
   url: string
   defaultModel?: string
-  // developerRole: string,
-  // store?: boolean,
-  // titleModel: string
-  // headers?: { [key: string]: string }
-  // authorizationAlias?: string
-  // authorizationPrefix?: string
-  // topLevelSystemPrompt?: boolean
   paramsSchema: any
   fetcher: ApiFetcher
 }
 
 interface ApiFetcher {
-  (messages: Message[], params: any, signal: AbortSignal): AsyncIterable<string>
+  (messages: Message[], params: any, signal?: AbortSignal): AsyncIterable<string>
 }
 
 interface ApiParams {
