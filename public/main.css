@@ -65,15 +65,15 @@ body {
     white-space: pre-wrap;
 }
 
-#chat>.developer {
+#chat > .developer {
     background-color: var(--developer-message-background);
 }
 
-#chat>.assistant {
+#chat > .assistant {
     background-color: var(--assistant-message-background);
 }
 
-#chat>.user {
+#chat > .user {
     background-color: var(--user-message-background);
 }
 
@@ -109,7 +109,13 @@ input[type="submit"] {
     margin: 0.5rem 0;
 }
 
-input[type="url"], input[type="text"], input[type="email"], input[type="password"], input[type="search"], input[type="number"], select {
+input[type="url"],
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="number"],
+select {
     width: 32rem;
     max-width: 100%;
     box-sizing: border-box;
@@ -175,7 +181,10 @@ input[type="url"], input[type="text"], input[type="email"], input[type="password
     color: inherit;
 }
 
-#input-set-button, #submit, #header-buttons-container > * {
+#input-set-button,
+#submit,
+#stop-button,
+#header-buttons-container > * {
     margin: 0;
 }
 
@@ -185,6 +194,11 @@ input[type="url"], input[type="text"], input[type="email"], input[type="password
 
 #params-form {
     display: none;
+}
+
+#form-top-bar {
+    display: flex;
+    justify-content: space-between;
 }
 @media (min-width: 34rem) {
     #app-header {
