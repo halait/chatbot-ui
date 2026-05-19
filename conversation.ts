@@ -1,8 +1,11 @@
+import { getUidDek } from "./auth.js";
+import { encrypt } from "./crypto.js";
 import { DB } from "./db.js";
 import {
   DoubleLinkedList,
   DoubleLinkedListNode,
 } from "./double_linked_list.js";
+import { set } from "./firestore_db.js";
 import { fetchAsPromise, Message } from "./main.js";
 
 export class ConversationMessageList extends DoubleLinkedList<ConversationMessageData> {
@@ -25,7 +28,6 @@ export class ConversationMessageList extends DoubleLinkedList<ConversationMessag
     message: Message,
     afterMessage?: DoubleLinkedListNode<ConversationMessageData> | null,
   ) {
-    console.log("addMessage: ", message);
     let conversationKey: number;
     let conversationStart: number | null = null;
 
@@ -36,6 +38,20 @@ export class ConversationMessageList extends DoubleLinkedList<ConversationMessag
         title,
         timestamp: conversationStart,
       });
+      const uidDek = await getUidDek();
+      if (uidDek) {
+        await set("conversations", {
+          uid: uidDek?.uid,
+          timestamp: conversationStart,
+          encryptedData: await encrypt(
+            JSON.stringify({
+              title,
+            }),
+            uidDek.dek,
+            "string",
+          ),
+        });
+      }
     } else {
       conversationKey = this.head.data.conversationKey;
     }
@@ -80,7 +96,6 @@ export class ConversationMessageList extends DoubleLinkedList<ConversationMessag
 
   async deleteMessage(db: DB, messageKey: number) {
     const node = this.getMessage(messageKey);
-    console.log(node);
 
     if (!node) {
       throw new Error("Message not found");

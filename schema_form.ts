@@ -1,3 +1,5 @@
+const supportTypes = ['string', 'number', 'boolean', 'object', 'enum']
+
 export function createForm(schema: any, values: any = {}, level: number = 0): HTMLElement {
   if (schema.type !== 'object') {
     throw new Error('Only object schema is supported')
@@ -44,6 +46,7 @@ export function createForm(schema: any, values: any = {}, level: number = 0): HT
       switch (item.type) {
         case 'number':
           input.type = 'number'
+          input.setAttribute("step", "any")
           if (values[key] !== undefined) {
             input.value = values[key]
           } else if (item.default !== undefined) {

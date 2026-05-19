@@ -1,7 +1,7 @@
 import { DB, ConversationMessage } from "./db.js";
 import { render } from "./markdown_renderer.js";
 import { DoubleLinkedListNode } from "./double_linked_list.js";
-import { main as dbMain } from "./firestore_db.js";
+// import { main as dbMain } from "./firestore_db.js";
 import { currentModal, toggleModal } from "./modal.js";
 import { main as authMain } from "./auth.js";
 import { createForm, getFormValues } from "./schema_form.js";
@@ -15,12 +15,12 @@ import {
 let apiParams: ApiParams = localStorage.getItem("apiParams")
   ? JSON.parse(localStorage.getItem("apiParams")!)
   : {
-      api: "openai.com",
-      params: {
-        model: "gpt-5-mini",
-        stream: true,
-      },
-    };
+    api: "openai.com",
+    params: {
+      model: "gpt-5-mini",
+      stream: true,
+    },
+  };
 
 const chatDiv = document.getElementById("chat") as HTMLElement;
 const input = document.getElementById("chat-input") as HTMLElement;
@@ -49,14 +49,9 @@ let lastFocusedMessage: DoubleLinkedListNode<ConversationMessageData> | null =
 let db: DB;
 let currentConversation = new ConversationMessageList();
 
-let lastChatDivScroll = 0;
-let lastCharDivScrollTop = 0;
-
 let currentStopSignal: AbortController | null = null;
 
 function getApiConfiguration(endpoint: string): Api | undefined {
-  console.log("getApiConfiguration called with endpoint:", endpoint);
-  console.log("apiMap:", apiMap);
   return apiMap[endpoint];
 }
 
@@ -104,19 +99,34 @@ async function submitForm() {
   const isLast = lastMessage === currentConversation.tail;
   const assistantMessage: Message = { role: "assistant", content: "" };
   const { node, element } = await addMessage(db, assistantMessage, lastMessage);
+  const initialPaddingHeight = isLast ? window.innerHeight * 1 : 0;
+  chatDiv.style.setProperty("--spacer-padding", `${initialPaddingHeight}px`);
+  element.scrollIntoView({ block: "start" });
+  const observer = new ResizeObserver(entries => {
+    for (const entry of entries) {
+      let paddingHeight = Math.max(0, initialPaddingHeight - entry.borderBoxSize[0].blockSize);
+      if(isLast) {
+        chatDiv.style.setProperty('--spacer-padding', `${paddingHeight}px`);
+      }
+      if(paddingHeight === 0) {
+        scrollToAlignChildBottom(chatDiv, element);
+      }
+    }
+  });
+  observer.observe(element);
+
+  element.textContent = 'Loading...'
+
   const message: string[] = [];
-  let start = Date.now();
   let lastUpdate = 0;
 
   try {
     for await (const chunk of response) {
+      if(!chunk) continue;
       message.push(chunk);
       const now = Date.now();
-      if (now - lastUpdate > 200) {
+      if (now - lastUpdate > 100) {
         updateUiMessage(element, message.join(""));
-        if (isLast && start > lastChatDivScroll) {
-          chatDiv.scrollTop = chatDiv.scrollHeight;
-        }
         lastUpdate = now;
       }
     }
@@ -129,15 +139,31 @@ async function submitForm() {
     // If we caught an AbortError or any other error that we're ignoring,
     // don't update the final message.
     return;
+  } finally {
+    observer.disconnect();
   }
 
   // Only update the final message if the stream completed normally.
   assistantMessage.content = message.join("");
   updateUiMessage(element, assistantMessage.content);
-  if (isLast && start > lastChatDivScroll) {
-    chatDiv.scrollTop = chatDiv.scrollHeight;
-  }
   await currentConversation.updateMessage(db, assistantMessage, node);
+}
+
+function scrollToAlignChildBottom(
+  container: HTMLElement,
+  child: HTMLElement,
+  behavior: ScrollBehavior = "smooth",
+  threshold: number = 192,
+): void {
+  const containerRect = container.getBoundingClientRect();
+  const childRect = child.getBoundingClientRect();
+
+  // How far child's bottom is from container's visible bottom, in scroll units
+  const delta = childRect.bottom - containerRect.bottom;
+
+  if (Math.abs(delta) <= threshold) {
+    container.scrollBy({ top: delta, behavior });
+  }
 }
 
 function addMessage(
@@ -243,18 +269,10 @@ function addMessageToUi(
     afterElement.after(div);
   } else {
     chatDiv.appendChild(div);
-    chatDiv.scrollTop = chatDiv.scrollHeight;
+    // chatDiv.scrollTop = chatDiv.scrollHeight;
   }
   return div;
 }
-
-chatDiv.addEventListener("scroll", function () {
-  const scrollTop = chatDiv.scrollTop;
-  if (scrollTop - lastCharDivScrollTop < 0) {
-    lastChatDivScroll = Date.now();
-  }
-  lastCharDivScrollTop = scrollTop;
-});
 
 function updateUiMessage(element: HTMLDivElement, content: string) {
   const nodes = render(content);
@@ -334,7 +352,7 @@ function setPresets(presets: { [key: string]: ApiParams }) {
 }
 
 async function main() {
-  dbMain();
+  // dbMain();
   authMain();
 
   db = new DB();
@@ -526,10 +544,7 @@ async function main() {
       currentConversation.clear();
       chatDiv.replaceChildren();
       for (const message of messages) {
-        addMessageToUi(
-          (await currentConversation.addMessage(db, message)).data,
-          message,
-        );
+        await addMessage(db, message)
       }
     });
 
@@ -562,6 +577,7 @@ async function main() {
     option.textContent = api;
     enpointSelect.appendChild(option);
   }
+
   enpointSelect.addEventListener("change", function () {
     apiParams.api = enpointSelect.value;
     if (!enpointSelect.value) {
@@ -578,6 +594,13 @@ async function main() {
       return;
     }
     paramsContainer.replaceChildren(createForm(api.paramsSchema ?? {}));
+    if (enpointSelect.value === "custom") {
+      const customFieldButton = document.createElement("button");
+      customFieldButton.textContent = "Add Custom Field";
+      customFieldButton.addEventListener("click", function () {
+        const fieldTypeSelection = document.createElement("select");
+      });
+    }
   });
 
   paramsForm.addEventListener("submit", function (e) {
@@ -613,6 +636,18 @@ async function main() {
       currentStopSignal.abort();
     }
   });
+
+  const bottomBar = document.querySelector("#form")!;
+  // Create an observer that fires whenever the bottom bar changes size
+  const observer = new ResizeObserver(function (entries) {
+    for (const entry of entries) {
+      // Get the exact pixel height of the bar
+      const height = entry.borderBoxSize[0].blockSize;
+      // Update the CSS variable globally
+      document.body.style.setProperty("--bottom-bar-height", `${height}px`);
+    }
+  });
+  observer.observe(bottomBar);
 }
 
 main();

@@ -13,6 +13,8 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    box-sizing: border-box;
+    --bottom-bar-height: 8rem;
 }
 
 #chat {
@@ -22,6 +24,9 @@ body {
     /* max-width: 80rem; */
     margin: 0 auto;
     box-sizing: border-box;
+    margin-bottom: var(--bottom-bar-height);
+    --spacer-padding: 0vh;
+    padding-bottom: var(--spacer-padding);
 }
 
 *::-webkit-scrollbar-track,
@@ -49,10 +54,13 @@ body {
     outline: none;
 }
 
-/* #form {
-    display: flex;
-    width: 100vw;
-} */
+#form {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    padding-bottom: env(safe-area-inset-bottom);
+    background-color: inherit;
+}
 
 #form-bar {
     display: flex;
