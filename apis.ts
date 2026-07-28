@@ -1,5 +1,16 @@
 import type { Message } from "./main.js";
 
+export interface TokenUsage {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+}
+
+export interface StreamChunk {
+  text?: string;
+  usage?: TokenUsage;
+}
+
 export const apiMap: { [key: string]: Api } = {
   "openai.com": {
     defaultModel: "gpt-5-mini",
@@ -112,7 +123,7 @@ export const apiMap: { [key: string]: Api } = {
       messages: Message[],
       params: any,
       signal?: AbortSignal,
-    ): AsyncIterable<string> {
+    ): AsyncIterable<StreamChunk> {
       const { key, ...regularParams } = params;
       if (!key) {
         throw new Error("API key is required");
@@ -146,7 +157,10 @@ export const apiMap: { [key: string]: Api } = {
 
       if (response.headers.get("Content-Type")?.includes("application/json")) {
         const data = await response.json();
-        yield data.choices?.[0]?.message?.content;
+        yield {
+          text: data.choices?.[0]?.message?.content,
+          usage: data.usage,
+        };
         return;
       } else if (
         response.headers.get("Content-Type")?.includes("text/event-stream")
@@ -157,7 +171,11 @@ export const apiMap: { [key: string]: Api } = {
           response.body.getReader(),
         )) {
           if (data) {
-            yield JSON.parse(data).choices?.[0]?.delta?.content;
+            const parsed = JSON.parse(data);
+            yield {
+              text: parsed.choices?.[0]?.delta?.content,
+              usage: parsed.usage,
+            };
           }
         }
       } else {
@@ -1022,7 +1040,7 @@ export interface ApiFetcher {
     messages: Message[],
     params: any,
     signal?: AbortSignal,
-  ): AsyncIterable<string>;
+  ): AsyncIterable<string | StreamChunk>;
 }
 
 export interface ApiParams {

@@ -1,11 +1,13 @@
 import { DB, ConversationMessage } from "./db.js";
-import { render } from "./markdown_renderer.js";
+import "./chat-message.js"; // registers <chat-message> custom element
+import type { ChatMessage } from "./chat-message.js";
 import { DoubleLinkedListNode } from "./double_linked_list.js";
 // import { main as dbMain } from "./firestore_db.js";
 import { currentModal, toggleModal } from "./modal.js";
 import { main as authMain } from "./auth.js";
 import { createForm, getFormValues } from "./schema_form.js";
-import { Api, apiMap, ApiParams } from "./apis.js";
+import { Api, apiMap, ApiParams, StreamChunk } from "./apis.js";
+import type { TokenUsage } from "./apis.js";
 import {
   Conversation,
   ConversationMessageData,
@@ -23,6 +25,37 @@ let apiParams: ApiParams = localStorage.getItem("apiParams")
   };
 
 const chatDiv = document.getElementById("chat") as HTMLElement;
+
+// Listen for events from chat-message custom elements.
+chatDiv.addEventListener("chat-message:focus", (e) => {
+  const id = (e as CustomEvent).detail.id;
+  lastFocusedMessage = currentConversation.getMessage(id);
+});
+
+chatDiv.addEventListener("chat-message:update", (e) => {
+  const { id, content, role } = (e as CustomEvent).detail;
+  const node = currentConversation.getMessage(id);
+  if (!node) throw new Error("Message not found");
+  currentConversation.updateMessage(db, { content, role }, node);
+});
+
+chatDiv.addEventListener("chat-message:delete", (e) => {
+  const id = (e as CustomEvent).detail.id;
+  if (lastFocusedMessage?.data.id === id) {
+    lastFocusedMessage = null;
+  }
+  currentConversation.deleteMessage(db, id);
+  resetTokenTotal();
+});
+
+chatDiv.addEventListener("chat-message:retry", (e) => {
+  retryMessage((e as CustomEvent).detail.id);
+});
+
+chatDiv.addEventListener("chat-message:branch", (e) => {
+  branchMessage((e as CustomEvent).detail.id);
+});
+
 const input = document.getElementById("chat-input") as HTMLElement;
 const roleSelect = document.getElementById("role-select") as HTMLSelectElement;
 
@@ -42,6 +75,7 @@ const paramsContainer = document.getElementById(
 const presetSelect = document.getElementById(
   "preset-select",
 ) as HTMLSelectElement;
+const tokenTotalEl = document.getElementById("token-total") as HTMLElement;
 
 let lastFocusedMessage: DoubleLinkedListNode<ConversationMessageData> | null =
   null;
@@ -71,6 +105,44 @@ async function submitForm() {
     lastMessage = lastFocusedMessage;
   }
 
+  await streamResponse(lastMessage);
+}
+
+async function retryMessage(messageId: number) {
+  const node = currentConversation.getMessage(messageId);
+  if (!node) return;
+  const prev = node.prev;
+  if (!prev) return;
+
+  // Remove the existing assistant message from conversation and DOM.
+  const element = chatDiv.querySelector(
+    `chat-message[data-id='${messageId}']`,
+  ) as ChatMessage | null;
+  element?.remove();
+  await currentConversation.deleteMessage(db, messageId);
+
+  await streamResponse(prev);
+}
+
+async function branchMessage(messageId: number) {
+  const node = currentConversation.getMessage(messageId);
+  if (!node) throw new Error("Message not found");
+
+  const branch = new ConversationMessageList();
+  let current = currentConversation.head;
+  while (current) {
+    await branch.addMessage(db, current.data.message);
+    if (current === node) break;
+    current = current.next;
+  }
+  if (!current) throw new Error("Branch point not reached");
+
+  router.goTo(`/conversation/${branch.head!.data.conversationKey}`);
+}
+
+async function streamResponse(
+  lastMessage: DoubleLinkedListNode<ConversationMessageData> | null,
+) {
   const api = apiMap[apiParams.api];
   if (!api) {
     showError("API configuration not found for endpoint: " + apiParams.api);
@@ -80,14 +152,30 @@ async function submitForm() {
   const messages: Message[] = [];
   let currentNode = currentConversation.head;
   while (currentNode != null) {
-    messages.push({
+    const msg: Message = {
       role: currentNode.data.message.role,
       content: currentNode.data.message.content,
-    });
+    };
+    // Skip hint messages — if the last message is a hint,
+    // it gets merged into the final user message below.
+    if (msg.role !== "hint") {
+      messages.push(msg);
+    }
     if (currentNode === lastMessage) {
       break;
     }
     currentNode = currentNode.next;
+  }
+  if (lastMessage?.data.message.role === "hint") {
+    const last = messages[messages.length - 1];
+    if (last && last.role === "user") {
+      last.content = `${last.content}\n\n[Hint: ${lastMessage.data.message.content}]`;
+    } else {
+      messages.push({
+        role: "user",
+        content: `[Hint: ${lastMessage.data.message.content}]`,
+      });
+    }
   }
 
   currentStopSignal = new AbortController();
@@ -99,70 +187,67 @@ async function submitForm() {
   const isLast = lastMessage === currentConversation.tail;
   const assistantMessage: Message = { role: "assistant", content: "" };
   const { node, element } = await addMessage(db, assistantMessage, lastMessage);
-  const initialPaddingHeight = isLast ? window.innerHeight * 1 : 0;
+  element.stopController = currentStopSignal;
+  const initialPaddingHeight = isLast ? window.innerHeight * 0.7 : 0;
   chatDiv.style.setProperty("--spacer-padding", `${initialPaddingHeight}px`);
-  element.scrollIntoView({ block: "start" });
-  const observer = new ResizeObserver(entries => {
-    for (const entry of entries) {
-      let paddingHeight = Math.max(0, initialPaddingHeight - entry.borderBoxSize[0].blockSize);
-      if(isLast) {
-        chatDiv.style.setProperty('--spacer-padding', `${paddingHeight}px`);
+  // chatDiv.offsetHeight; // force layout
+  element.scrollIntoView(true);
+  let observer: ResizeObserver | undefined;
+  if (isLast) {
+    observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        let paddingHeight = Math.max(
+          0,
+          initialPaddingHeight - entry.borderBoxSize[0].blockSize,
+        );
+        chatDiv.style.setProperty("--spacer-padding", `${paddingHeight}px`);
       }
-      if(paddingHeight === 0) {
-        scrollToAlignChildBottom(chatDiv, element);
-      }
-    }
-  });
-  observer.observe(element);
+    });
+    observer.observe(element);
+  }
 
-  element.textContent = 'Loading...'
+  element.setStreaming(true);
 
   const message: string[] = [];
   let lastUpdate = 0;
 
+  let tokenUsage: TokenUsage | undefined;
+
   try {
     for await (const chunk of response) {
-      if(!chunk) continue;
-      message.push(chunk);
-      const now = Date.now();
-      if (now - lastUpdate > 100) {
-        updateUiMessage(element, message.join(""));
-        lastUpdate = now;
+      if (!chunk) continue;
+      // Support both legacy string chunks and new StreamChunk objects.
+      const text = typeof chunk === "string" ? chunk : chunk.text;
+      if (text) {
+        message.push(text);
+        const now = Date.now();
+        if (now - lastUpdate > 100) {
+          updateUiMessage(element, message.join(""));
+          lastUpdate = now;
+        }
+      }
+      if (typeof chunk === "object" && chunk.usage) {
+        tokenUsage = { ...tokenUsage, ...chunk.usage };
+        element.setUsage(chunk.usage);
+        updateTokenTotal(chunk.usage);
       }
     }
   } catch (err) {
     // Ignore abort errors; they are expected when the user hits "stop".
     if (err instanceof Error && err.name !== "AbortError") {
-      // Re‑throw any other unexpected errors.
       throw err;
     }
-    // If we caught an AbortError or any other error that we're ignoring,
-    // don't update the final message.
     return;
   } finally {
-    observer.disconnect();
-  }
-
-  // Only update the final message if the stream completed normally.
-  assistantMessage.content = message.join("");
-  updateUiMessage(element, assistantMessage.content);
-  await currentConversation.updateMessage(db, assistantMessage, node);
-}
-
-function scrollToAlignChildBottom(
-  container: HTMLElement,
-  child: HTMLElement,
-  behavior: ScrollBehavior = "smooth",
-  threshold: number = 192,
-): void {
-  const containerRect = container.getBoundingClientRect();
-  const childRect = child.getBoundingClientRect();
-
-  // How far child's bottom is from container's visible bottom, in scroll units
-  const delta = childRect.bottom - containerRect.bottom;
-
-  if (Math.abs(delta) <= threshold) {
-    container.scrollBy({ top: delta, behavior });
+    element.stopController = null;
+    element.setStreaming(false);
+    observer?.disconnect();
+    assistantMessage.content = message.join("");
+    updateUiMessage(element, assistantMessage.content);
+    if (tokenUsage) {
+      element.setUsage(tokenUsage);
+    }
+    await currentConversation.updateMessage(db, assistantMessage, node);
   }
 }
 
@@ -173,7 +258,7 @@ function addMessage(
 ) {
   return new Promise<{
     node: DoubleLinkedListNode<ConversationMessageData>;
-    element: HTMLDivElement;
+    element: ChatMessage;
   }>(async function (resolve) {
     const node = await currentConversation.addMessage(
       db,
@@ -213,70 +298,43 @@ function addMessage(
 function addMessageToUi(
   messageData: ConversationMessageData,
   afterMessageId?: number,
-): HTMLDivElement {
-  const div = document.createElement("div");
-  div.setAttribute("contenteditable", "true");
-  div.className = `message-div ${messageData.message.role}`;
-  const nodes = render(messageData.message.content);
-  for (const child of nodes) {
-    div.appendChild(child);
-  }
-  div.dataset.id = messageData.id!.toString();
-  div.dataset.role = messageData.message.role;
-  div.addEventListener("focusin", function (e) {
-    const element = e.currentTarget as HTMLElement;
-    element.setAttribute("spellcheck", "true");
-    const node = currentConversation.getMessage(parseInt(element.dataset.id!));
-    lastFocusedMessage = node;
-    if (!node) {
-      throw new Error("Message not found");
-    }
-    element.replaceChildren(document.createTextNode(node.data.message.content));
-  });
-  div.addEventListener("focusout", function (e) {
-    const element = e.currentTarget as HTMLElement;
-    element.setAttribute("spellcheck", "false");
-    const messageKey = parseInt(element.dataset.id!);
-    const content = element.innerText.trim();
-    if (!content) {
-      if (lastFocusedMessage?.data.id === messageKey) {
-        lastFocusedMessage = null;
-      }
-      currentConversation.deleteMessage(db, messageKey);
-      element.parentElement?.removeChild(element);
-      return;
-    }
-    const nodes = render(content);
-    element.replaceChildren(...nodes);
-    const node = currentConversation.getMessage(messageKey);
-    if (!node) throw new Error("Message not found");
-    currentConversation.updateMessage(
-      db,
-      {
-        content: content,
-        role: element.dataset.role as "user" | "assistant" | "developer",
-      },
-      node,
-    );
-  });
+): ChatMessage {
+  const el = document.createElement("chat-message") as ChatMessage;
+  el.setAttribute("data-id", messageData.id!.toString());
+  el.setAttribute("data-role", messageData.message.role);
+  el.updateContent(messageData.message.content);
   if (afterMessageId !== undefined) {
     const afterElement = chatDiv.querySelector(
-      `div.message-div[data-id='${afterMessageId}']`,
+      `chat-message[data-id='${afterMessageId}']`,
     );
     if (!afterElement) {
       throw new Error("After element not found");
     }
-    afterElement.after(div);
+    afterElement.after(el);
   } else {
-    chatDiv.appendChild(div);
+    chatDiv.appendChild(el);
     // chatDiv.scrollTop = chatDiv.scrollHeight;
   }
-  return div;
+  return el;
 }
 
-function updateUiMessage(element: HTMLDivElement, content: string) {
-  const nodes = render(content);
-  element.replaceChildren(...nodes);
+function updateUiMessage(element: ChatMessage, content: string) {
+  element.updateContent(content);
+}
+
+function updateTokenTotal(usage: TokenUsage) {
+  const parts: string[] = [];
+  if (usage.total_tokens !== undefined) parts.push(`${usage.total_tokens} total`);
+  if (usage.prompt_tokens !== undefined) parts.push(`${usage.prompt_tokens} in`);
+  if (parts.length > 0) {
+    tokenTotalEl.textContent = parts.join(" · ");
+    tokenTotalEl.style.display = "";
+  }
+}
+
+function resetTokenTotal() {
+  tokenTotalEl.textContent = "";
+  tokenTotalEl.style.display = "none";
 }
 
 async function setConversation(
@@ -284,6 +342,7 @@ async function setConversation(
   conversation: Conversation,
 ) {
   currentConversation.clear();
+  resetTokenTotal();
   const conversationMessages = (await db.getAllIndexKey(
     "conversationsMessages",
     "conversationKey",
@@ -313,6 +372,7 @@ async function deleteConversation(conversationKey: number) {
   if (currentConversation.head?.data.conversationKey === conversationKey) {
     currentConversation.clear();
     chatDiv.replaceChildren();
+    resetTokenTotal();
     router.goTo("/");
   }
   await db.deleteAllIndexKey(
@@ -436,6 +496,23 @@ async function main() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       await submitForm();
+    }
+  });
+
+  // Keyboard shortcuts for role selection.
+  document.addEventListener("keydown", (e) => {
+    if (!e.ctrlKey || e.shiftKey || e.altKey || e.metaKey) return;
+    const roleMap: Record<string, string> = {
+      d: "developer",
+      u: "user",
+      a: "assistant",
+      h: "hint",
+    };
+    const role = roleMap[e.key.toLowerCase()];
+    if (role) {
+      e.preventDefault();
+      roleSelect.value = role;
+      input.focus();
     }
   });
 
@@ -631,12 +708,6 @@ async function main() {
     : {};
   setPresets(presets);
 
-  document.getElementById("stop-button")?.addEventListener("click", () => {
-    if (currentStopSignal) {
-      currentStopSignal.abort();
-    }
-  });
-
   const bottomBar = document.querySelector("#form")!;
   // Create an observer that fires whenever the bottom bar changes size
   const observer = new ResizeObserver(function (entries) {
@@ -662,7 +733,8 @@ export async function fetchAsPromise(
   let result = [];
   try {
     for await (const chunk of response) {
-      result.push(chunk);
+      const text = typeof chunk === "string" ? chunk : chunk.text;
+      if (text) result.push(text);
     }
   } catch (err) {
     // Ignore abort errors; they are expected when the user hits "stop".
@@ -689,6 +761,7 @@ const router = {
     if (path === "/") {
       currentConversation.clear();
       chatDiv.replaceChildren();
+      resetTokenTotal();
       return;
     }
     if (path.startsWith("/conversation/")) {
@@ -705,6 +778,6 @@ const router = {
 };
 
 export interface Message {
-  role: "user" | "assistant" | "developer";
+  role: "user" | "assistant" | "developer" | "hint";
   content: string;
 }
