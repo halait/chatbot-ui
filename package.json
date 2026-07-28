@@ -1,12 +1,15 @@
 {
   "devDependencies": {
     "@types/node": "^22.10.4",
-    "ts-loader": "^9.5.4",
-    "webpack": "^5.104.1",
-    "webpack-cli": "^6.0.1"
+    "esbuild": "^0.25.0"
   },
   "type": "module",
   "dependencies": {
     "firebase": "^12.7.0"
+  },
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
+    "check": "tsc --noEmit"
   }
 }
