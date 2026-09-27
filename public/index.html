@@ -25,11 +25,12 @@
         <form id="form">
             <div id="form-top-bar">
                 <select id="role-select">
-                    <option value="developer">developer</option>
-                    <option value="user">user</option>
-                    <option value="assistant">assistant</option>
-                    <option value="hint">hint</option>
+                    <option value="developer">developer (alt+d)</option>
+                    <option value="user">user (alt+u)</option>
+                    <option value="assistant">assistant (alt+a)</option>
+                    <option value="hint">hint (alt+h)</option>
                 </select>
+                <button id="summarize-button" type="button">summarize</button>
                 <span id="token-total"></span>
             </div>
             <div id="form-bar">
@@ -49,6 +50,17 @@
         </div>
         <div id="config-modal" class="modal">
             <h2>configuration</h2>
+            <!-- TODO: consider integrating this into the config mechanisms
+                 (schema_form, presets, apiParams localStorage). -->
+            <form id="summarize-form">
+                <label for="summarize-tail-input">keep last (summarize)</label>
+                <input
+                    id="summarize-tail-input"
+                    type="number"
+                    min="1"
+                    value="4"
+                />
+            </form>
             <form id="endpoint-form">
                 <label for="set-endpoint-input">api</label>
                 <select id="set-endpoint-input">

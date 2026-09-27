@@ -94,7 +94,7 @@ export class ChatMessage extends HTMLElement {
 
     actions.append(copyBtn, editBtn, deleteBtn);
 
-    // Retry + stop — only for assistant messages.
+    // Retry — only for assistant messages.
     if (this.getAttribute("data-role") === "assistant") {
       const retryBtn = document.createElement("button");
       retryBtn.textContent = "retry";
@@ -107,7 +107,10 @@ export class ChatMessage extends HTMLElement {
         );
       });
       actions.append(retryBtn);
+    }
 
+    // Stop — for assistant and summary messages (streaming targets).
+    if (["assistant", "summary"].includes(this.getAttribute("data-role")!)) {
       const stopBtn = document.createElement("button");
       stopBtn.textContent = "stop";
       stopBtn.style.display = "none";
@@ -140,6 +143,18 @@ export class ChatMessage extends HTMLElement {
     actions.append(tokenBadge);
     this._tokenBadge = tokenBadge;
 
+    // Role label, separate from the buttons so it can be pushed to the
+    // right edge on wider screens.
+    const roleLabel = document.createElement("span");
+    roleLabel.className = "message-role-label";
+    roleLabel.textContent = this.getAttribute("data-role") ?? "";
+
+    // Header: role label above the buttons on narrow screens; side by
+    // side on wide screens (see .message-header in main.css).
+    const header = document.createElement("div");
+    header.className = "message-header";
+    header.append(roleLabel, actions);
+
     // Content wrapper.
     const contentDiv = document.createElement("div");
     contentDiv.className = "message-content";
@@ -147,7 +162,7 @@ export class ChatMessage extends HTMLElement {
     const nodes = render(this._rawContent);
     contentDiv.append(...nodes);
 
-    this.replaceChildren(actions, contentDiv);
+    this.replaceChildren(header, contentDiv);
   }
 
   #renderContent() {

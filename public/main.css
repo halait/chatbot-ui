@@ -6,6 +6,7 @@ body {
     --assistant-message-background: #002;
     --user-message-background: #020;
     --hint-message-background: #222;
+    --summary-message-background: #212;
     color: var(--color);
     background-color: var(--background-color);
     margin: 0;
@@ -74,9 +75,42 @@ chat-message {
     max-width: 80rem;
 }
 
+.message-gap {
+    display: flex;
+    justify-content: center;
+    margin: -0.5rem 0;
+}
+
+.message-gap button {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.5rem;
+    opacity: 0.6;
+}
+
+.message-gap button:hover {
+    opacity: 1;
+}
+
+.message-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
 .message-actions {
     display: flex;
     gap: 0.3rem;
+}
+
+@media (min-width: 40rem) {
+    .message-header {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .message-actions {
+        order: -1;
+    }
 }
 
 .message-actions button {
@@ -119,6 +153,15 @@ chat-message[data-role="user"] {
 
 chat-message[data-role="hint"] {
     background-color: var(--hint-message-background);
+}
+
+chat-message[data-role="summary"] {
+    background-color: var(--summary-message-background);
+}
+
+.message-role-label {
+    font-size: 0.7rem;
+    color: #888;
 }
 
 #role-select {
@@ -241,8 +284,12 @@ select {
 
 #form-top-bar {
     display: flex;
-    justify-content: space-between;
+    gap: 0.4rem;
     align-items: baseline;
+}
+
+#summarize-tail-input {
+    width: 3.5rem;
 }
 
 #token-total {

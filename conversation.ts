@@ -88,6 +88,28 @@ export class ConversationMessageList extends DoubleLinkedList<ConversationMessag
     return node;
   }
 
+  async addHeadMessage(db: DB, message: Message) {
+    // Empty list: start a new conversation as usual.
+    if (!this.head) {
+      return await this.addMessage(db, message);
+    }
+
+    const conversationKey = this.head.data.conversationKey;
+    const node = this.addHead({
+      conversationKey,
+      message,
+      id: -1,
+    });
+    const id = await this.setDbMessage(db, node);
+    node.data.id = id;
+
+    // The old head now points back at the new one, and the conversation
+    // root moves to the new head so it survives reloads.
+    await this.setDbMessage(db, node.next!);
+    await db.updateObject("conversations", { root: id }, conversationKey);
+    return node;
+  }
+
   getMessage(messageKey: number) {
     return this.find(function (data) {
       return data.id === messageKey;

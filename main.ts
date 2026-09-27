@@ -44,6 +44,13 @@ chatDiv.addEventListener("chat-message:delete", (e) => {
   if (lastFocusedMessage?.data.id === id) {
     lastFocusedMessage = null;
   }
+  // The element is still in the DOM while the event dispatches.
+  const element = chatDiv.querySelector(
+    `chat-message[data-id='${id}']`,
+  ) as ChatMessage | null;
+  if (element) {
+    removeMessageElement(element);
+  }
   currentConversation.deleteMessage(db, id);
   resetTokenTotal();
 });
@@ -102,7 +109,12 @@ async function submitForm() {
     await addMessage(db, message);
     lastMessage = currentConversation.tail;
   } else if (lastFocusedMessage) {
-    lastMessage = lastFocusedMessage;
+    // Continuing from a summary node sends from the end of the
+    // conversation, not a response inserted before the verbatim tail.
+    lastMessage =
+      lastFocusedMessage.data.message.role === "summary"
+        ? currentConversation.tail
+        : lastFocusedMessage;
   }
 
   await streamResponse(lastMessage);
@@ -118,7 +130,9 @@ async function retryMessage(messageId: number) {
   const element = chatDiv.querySelector(
     `chat-message[data-id='${messageId}']`,
   ) as ChatMessage | null;
-  element?.remove();
+  if (element) {
+    removeMessageElement(element);
+  }
   await currentConversation.deleteMessage(db, messageId);
 
   await streamResponse(prev);
@@ -140,6 +154,144 @@ async function branchMessage(messageId: number) {
   router.goTo(`/conversation/${branch.head!.data.conversationKey}`);
 }
 
+async function summarizeConversation() {
+  // Use the last summary node as the roll-up base. Older summaries stay
+  // in the list as history — the payload walk picks up the last one.
+  const allNodes = currentConversation.toNodeArray();
+  const summaryNodes = allNodes.filter(
+    (node) => node.data.message.role === "summary",
+  );
+  const lastSummaryNode = summaryNodes[summaryNodes.length - 1] ?? null;
+
+  // Collect story messages after the last summary; the last few stay
+  // verbatim and the rest are folded into the new summary.
+  const tailSize = Math.max(
+    1,
+    parseInt(
+      (document.getElementById("summarize-tail-input") as HTMLInputElement)
+        .value,
+    ) || 4,
+  );
+  let afterLastSummary = !lastSummaryNode;
+  const storyNodes: DoubleLinkedListNode<ConversationMessageData>[] = [];
+  for (const node of allNodes) {
+    if (node === lastSummaryNode) {
+      afterLastSummary = true;
+      continue;
+    }
+    if (
+      afterLastSummary &&
+      ["user", "assistant"].includes(node.data.message.role)
+    ) {
+      storyNodes.push(node);
+    }
+  }
+  const summarizableNodes = storyNodes.slice(0, -tailSize);
+  const tailNodes = storyNodes.slice(-tailSize);
+
+  if (summarizableNodes.length === 0) {
+    console.warn("Nothing new to summarize, ignoring");
+    return;
+  }
+
+  // JSON input: unambiguous role attribution even when message contents
+  // contain newlines, colons, or role-like text.
+  const summaryInput = {
+    ...(lastSummaryNode && lastSummaryNode.data.message.content
+      ? { previousSummary: lastSummaryNode.data.message.content }
+      : {}),
+    messages: summarizableNodes.map((node) => ({
+      role: node.data.message.role,
+      content: node.data.message.content,
+    })),
+  };
+
+  // The new summary goes right before the verbatim tail. It is added
+  // empty and streamed into; older summaries stay in the list as history.
+  const anchor = tailNodes[0]?.prev ?? null;
+  if (!anchor) {
+    throw new Error("Cannot place summary: no anchor before tail");
+  }
+
+  const summaryMessage: Message = { role: "summary", content: "" };
+  const { node, element } = await addMessage(db, summaryMessage, anchor);
+
+  const stopSignal = new AbortController();
+  element.stopController = stopSignal;
+  element.setStreaming(true);
+  element.scrollIntoView(true);
+
+  const chunks: string[] = [];
+  let lastUpdate = 0;
+
+  try {
+    const response = apiMap[apiParams.api].fetcher(
+      [
+        {
+          role: "developer",
+          content:
+            "You are summarizing a long conversation so it fits in context. " +
+            "The conversation is provided as JSON: a 'messages' array of " +
+            "{role, content} objects, and optionally a 'previousSummary' " +
+            "string covering earlier messages. Write a concise summary of " +
+            "everything that has happened, combining the previous summary " +
+            "(if present) with the new messages, preserving the information " +
+            "that matters for continuing the conversation correctly. " +
+            "Do not include anything from this instruction in the summary.",
+        },
+        { role: "user", content: JSON.stringify(summaryInput) },
+      ],
+      apiParams.params,
+      stopSignal.signal,
+    );
+    for await (const chunk of response) {
+      if (!chunk) continue;
+      const text = typeof chunk === "string" ? chunk : chunk.text;
+      if (text) {
+        chunks.push(text);
+        const now = Date.now();
+        if (now - lastUpdate > 100) {
+          updateUiMessage(element, chunks.join(""));
+          lastUpdate = now;
+        }
+      }
+      if (typeof chunk === "object" && chunk.usage) {
+        element.setUsage(chunk.usage);
+        updateTokenTotal(chunk.usage);
+      }
+    }
+  } catch (err) {
+    // Aborted or failed — remove the incomplete node; the previous
+    // summary (if any) is still in place.
+    removeMessageElement(element);
+    if (lastFocusedMessage?.data.id === node.data.id) {
+      lastFocusedMessage = null;
+    }
+    await currentConversation.deleteMessage(db, node.data.id);
+    resetTokenTotal();
+    if (err instanceof Error && err.name !== "AbortError") {
+      throw err;
+    }
+    return;
+  }
+
+  element.stopController = null;
+  element.setStreaming(false);
+  summaryMessage.content = chunks.join("");
+  updateUiMessage(element, summaryMessage.content);
+  await currentConversation.updateMessage(db, summaryMessage, node);
+
+  if (!summaryMessage.content.trim()) {
+    console.warn("Summarization returned empty content, removing node");
+    removeMessageElement(element);
+    if (lastFocusedMessage?.data.id === node.data.id) {
+      lastFocusedMessage = null;
+    }
+    await currentConversation.deleteMessage(db, node.data.id);
+    return;
+  }
+}
+
 async function streamResponse(
   lastMessage: DoubleLinkedListNode<ConversationMessageData> | null,
 ) {
@@ -149,19 +301,31 @@ async function streamResponse(
     return;
   }
 
-  const messages: Message[] = [];
+  let messages: Message[] = [];
+  let summaryContent: string | null = null;
   let currentNode = currentConversation.head;
   while (currentNode != null) {
     const msg: Message = {
       role: currentNode.data.message.role,
       content: currentNode.data.message.content,
     };
-    // Skip hint messages — if the last message is a hint,
-    // it gets merged into the final user message below.
-    if (msg.role !== "hint") {
+    if (msg.role === "summary") {
+      // Summary nodes are never sent directly: they replace everything
+      // before them (except the developer message) and get folded into
+      // the developer message below. Empty nodes (e.g. mid-stream) are
+      // skipped entirely.
+      if (msg.content) {
+        summaryContent = msg.content;
+        messages = messages.filter((m) => m.role === "developer");
+      }
+    } else if (msg.role !== "hint") {
+      // Skip hint messages — if the last message is a hint,
+      // it gets merged into the final user message below.
       messages.push(msg);
     }
-    if (currentNode === lastMessage) {
+    // A summary node is a watermark, not a stop point: the live window
+    // after it must still be sent.
+    if (currentNode === lastMessage && msg.role !== "summary") {
       break;
     }
     currentNode = currentNode.next;
@@ -174,6 +338,21 @@ async function streamResponse(
       messages.push({
         role: "user",
         content: `[Hint: ${lastMessage.data.message.content}]`,
+      });
+    }
+  }
+
+  if (summaryContent) {
+    // Append the summary to the first developer message (every fetcher
+    // treats the first developer specially), or create one if absent.
+    const developerIndex = messages.findIndex((m) => m.role === "developer");
+    const summaryBlock = `\n\n[Summary of events so far]\n${summaryContent}`;
+    if (developerIndex !== -1) {
+      messages[developerIndex].content += summaryBlock;
+    } else {
+      messages.unshift({
+        role: "developer",
+        content: `[Summary of events so far]\n${summaryContent}`,
       });
     }
   }
@@ -298,24 +477,89 @@ function addMessage(
 function addMessageToUi(
   messageData: ConversationMessageData,
   afterMessageId?: number,
+  atHead: boolean = false,
+  beforeElement?: HTMLElement,
 ): ChatMessage {
   const el = document.createElement("chat-message") as ChatMessage;
   el.setAttribute("data-id", messageData.id!.toString());
   el.setAttribute("data-role", messageData.message.role);
   el.updateContent(messageData.message.content);
-  if (afterMessageId !== undefined) {
+  const gap = createMessageGap();
+  if (atHead) {
+    chatDiv.prepend(gap, el);
+  } else if (beforeElement) {
+    beforeElement.before(gap, el);
+  } else if (afterMessageId !== undefined) {
     const afterElement = chatDiv.querySelector(
       `chat-message[data-id='${afterMessageId}']`,
     );
     if (!afterElement) {
       throw new Error("After element not found");
     }
-    afterElement.after(el);
+    afterElement.after(gap, el);
   } else {
+    chatDiv.appendChild(gap);
     chatDiv.appendChild(el);
-    // chatDiv.scrollTop = chatDiv.scrollHeight;
   }
   return el;
+}
+
+function createMessageGap(): HTMLElement {
+  const gap = document.createElement("div");
+  gap.className = "message-gap";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = "new message";
+  button.addEventListener("click", function () {
+    // Insert before the message this gap precedes.
+    const beforeEl = gap.nextElementSibling as ChatMessage | null;
+    insertMessageBefore(beforeEl);
+  });
+  gap.appendChild(button);
+  return gap;
+}
+
+async function insertMessageBefore(beforeEl: ChatMessage | null) {
+  const message: Message = {
+    role: roleSelect.value as "user" | "assistant" | "developer" | "hint",
+    content: "",
+  };
+
+  // Insert after the previous message; at the head if this gap is above
+  // the first message; at the tail if there is no message below.
+  let atHead = false;
+  let afterNode: DoubleLinkedListNode<ConversationMessageData> | null = null;
+  if (beforeEl) {
+    const anchorNode = currentConversation.getMessage(beforeEl.messageId);
+    if (!anchorNode) return;
+    if (anchorNode.prev) {
+      afterNode = anchorNode.prev;
+    } else {
+      atHead = true;
+    }
+  } else {
+    afterNode = currentConversation.tail;
+  }
+
+  const node = atHead
+    ? await currentConversation.addHeadMessage(db, message)
+    : await currentConversation.addMessage(db, message, afterNode);
+  const element = addMessageToUi(
+    node.data,
+    afterNode?.data.id,
+    atHead,
+    beforeEl ?? undefined,
+  );
+  // Focus the new message so it can be typed into immediately.
+  (element.querySelector(".message-content") as HTMLElement).focus();
+}
+
+function removeMessageElement(element: ChatMessage) {
+  const gap = element.previousElementSibling;
+  if (gap?.classList.contains("message-gap")) {
+    gap.remove();
+  }
+  element.remove();
 }
 
 function updateUiMessage(element: ChatMessage, content: string) {
@@ -477,6 +721,35 @@ async function main() {
     });
 
   document
+    .getElementById("summarize-button")
+    ?.addEventListener("click", async function (e) {
+      const button = e.currentTarget as HTMLButtonElement;
+      if (button.hasAttribute("disabled")) {
+        return;
+      }
+      button.setAttribute("disabled", "");
+      try {
+        await summarizeConversation();
+      } finally {
+        button.removeAttribute("disabled");
+      }
+    });
+
+  // TODO: consider integrating the "keep last" summary input into the
+  // config mechanisms (schema_form, presets, apiParams localStorage)
+  // instead of this bespoke persistence.
+  const summarizeTailInput = document.getElementById(
+    "summarize-tail-input",
+  ) as HTMLInputElement | null;
+  if (summarizeTailInput) {
+    summarizeTailInput.value =
+      localStorage.getItem("summarizeTailSize") ?? "4";
+    summarizeTailInput.addEventListener("change", function () {
+      localStorage.setItem("summarizeTailSize", summarizeTailInput.value);
+    });
+  }
+
+  document
     .getElementById("input-set-button")
     ?.addEventListener("click", async function () {
       const content = input.innerText.trim();
@@ -499,9 +772,13 @@ async function main() {
     }
   });
 
-  // Keyboard shortcuts for role selection.
+  // Keyboard shortcuts for role selection (Alt+letter). Ctrl combos were
+  // avoided because they collide with browser defaults: Ctrl+d bookmark,
+  // Ctrl+u view source, Ctrl+h history, Ctrl+a select all.
   document.addEventListener("keydown", (e) => {
-    if (!e.ctrlKey || e.shiftKey || e.altKey || e.metaKey) return;
+    // Excluding e.ctrlKey also skips AltGr (Ctrl+Alt) combinations used
+    // to type characters on some keyboard layouts.
+    if (!e.altKey || e.ctrlKey || e.shiftKey || e.metaKey) return;
     const roleMap: Record<string, string> = {
       d: "developer",
       u: "user",
@@ -778,6 +1055,6 @@ const router = {
 };
 
 export interface Message {
-  role: "user" | "assistant" | "developer" | "hint";
+  role: "user" | "assistant" | "developer" | "hint" | "summary";
   content: string;
 }
